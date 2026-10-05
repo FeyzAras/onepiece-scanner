@@ -34,8 +34,16 @@ android {
             // Signiert mit dem Debug-Schluessel: ausreichend zum Selbstinstallieren,
             // fuer den Play Store waere ein eigener Signaturschluessel noetig.
             signingConfig = signingConfigs.getByName("debug")
-            // Ohne diese Regeln bricht R8 ab, weil das ML-Kit-Plugin auf nicht eingebundene
-            // Schrift-Erkenner (Chinesisch/Japanisch/Koreanisch/Devanagari) verweist.
+
+            // Code-Verkleinerung (R8) ist bewusst AUS.
+            // Mit R8 schlug die Bilduebergabe an ML Kit zur Laufzeit fehl:
+            //   PlatformException(InputImageConverterError, java.lang.NullPointerException:
+            //   Attempt to invoke virtual method 'java.lang.Class java.lang.Object.getClass()'
+            //   on a null object reference)
+            // Ursache: R8 entfernt Teile, die ML Kit erst zur Laufzeit ueber Reflection laedt.
+            // Die App wird dadurch groesser, funktioniert aber zuverlaessig.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

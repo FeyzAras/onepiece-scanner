@@ -77,6 +77,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   bool _showDiag = false;
   int _framesSeen = 0;
   int _framesAnalyzed = 0;
+  int _framesFailed = 0;
   String _imageInfo = '-';
   String _lastOcr = '';
   String? _lastError;
@@ -158,6 +159,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       final result = _matcher!.match(text);
       if (result != null) _maybeAdd(result);
     } catch (e) {
+      _framesFailed++;
       _lastError = e.toString();
       if (_showDiag && mounted) setState(() {});
     }
@@ -438,7 +440,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                   style: TextStyle(fontSize: 10, color: Color(0xFFFFB703), fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               Text('Bilder von der Kamera: $_framesSeen'),
-              Text('davon ausgewertet: $_framesAnalyzed'),
+              Text('davon ausgewertet: $_framesAnalyzed · fehlgeschlagen: $_framesFailed'),
               Text('Bild: $_imageInfo'),
               const SizedBox(height: 4),
               Text('Gelesener Text: ${_lastOcr.isEmpty ? '(noch keiner)' : _lastOcr}',
@@ -446,7 +448,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
               if (_lastError != null) ...[
                 const SizedBox(height: 4),
                 Text('Fehler: $_lastError',
-                    maxLines: 3, overflow: TextOverflow.ellipsis,
+                    maxLines: 8, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: Color(0xFFFF8A8A))),
               ],
             ],

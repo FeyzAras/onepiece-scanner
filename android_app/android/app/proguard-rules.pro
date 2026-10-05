@@ -6,5 +6,10 @@
 -dontwarn com.google.mlkit.vision.text.japanese.**
 -dontwarn com.google.mlkit.vision.text.korean.**
 
-# Die lateinische Variante bleibt vollstaendig erhalten.
--keep class com.google.mlkit.vision.text.latin.** { *; }
+# ML Kit laedt Teile erst zur Laufzeit ueber Reflection. Wird R8 wieder eingeschaltet
+# (siehe build.gradle.kts), muessen diese Klassen vollstaendig erhalten bleiben - sonst
+# scheitert die Bilduebergabe mit einer NullPointerException.
+-keep class com.google.mlkit.** { *; }
+-keep class com.google.android.gms.internal.mlkit_** { *; }
+-keep class com.google_mlkit_commons.** { *; }
+-keep class com.google_mlkit_text_recognition.** { *; }
