@@ -32,13 +32,25 @@ wird nur benutzt, um die Kartenbilder in der Liste nachzuladen.
 So läuft es ab:
 
 1. App öffnen — die Kamera startet und **scannt sofort von allein**. Kein Knopfdruck nötig.
-2. Karte so halten, dass sie **im goldenen Rahmen** liegt.
-3. Sobald die App die Karte erkennt:
+2. Karte so halten, dass sie **im goldenen Rahmen** liegt. **Wichtig: Die Kartennummer unten
+   rechts (z. B. `OP07-055`) muss lesbar sein** — im Rahmen ist die Stelle markiert.
+3. Die App liest die Nummer und muss sie **zweimal bestätigen**, bevor sie die Karte übernimmt.
+   Währenddessen steht unten „Prüfe OP07-055 …".
+4. Sobald bestätigt:
    - kurzes **Vibrieren**
-   - grüne Bestätigung oben: **✓ Kartenname**
-   - Eintrag wandert unten in die Liste
-4. Nächste Karte davor halten. Dieselbe Karte wird innerhalb von 4 Sekunden **nicht doppelt**
+   - grüne Meldung oben: **✓ Kartenname · Nummer**
+   - Miniaturbild erscheint unten im Streifen
+5. Nächste Karte davor halten. Dieselbe Karte wird innerhalb von 5 Sekunden **nicht doppelt**
    eingetragen — du kannst sie also ruhig im Bild lassen.
+
+### Warum die Kartennummer, nicht der Name?
+
+Der Kartenname allein reicht nicht aus. Viele Karten heißen gleich, und Namen anderer Karten
+stehen im Effekttext — beim Scannen von „Snake Dance" wurden so reihum „Gina" und „Portgas.D.Ace"
+erkannt. Die aufgedruckte Nummer ist dagegen eindeutig.
+
+Deshalb gilt: **Ohne lesbare Nummer wird nichts übernommen.** Erkennt die App nur den Namen, zeigt
+sie einen Hinweis („… erkannt – Kartennummer unten rechts ins Bild halten"), trägt aber nichts ein.
 
 **Der runde Knopf unten ist kein Auslöser**, sondern Pause/Weiter. Nützlich, wenn du kurz etwas
 anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsammelt.
@@ -55,20 +67,23 @@ anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsa
 
 <img src="docs/images/ui-liste.svg" width="300" alt="Liste der gescannten Karten mit Namen, Set-Nummer, Erkennungsart und Preis">
 
-Die Liste am unteren Rand **nach oben ziehen**, um alle gescannten Karten zu sehen.
+Unten siehst du immer einen **Streifen mit Miniaturbildern** der gescannten Karten, jeweils mit
+Preis darunter. Auf eine Miniatur tippen öffnet die Kartendetails (großes Bild, Set, Seltenheit,
+Preis mit Stand, Effekttext, Löschen-Knopf).
+
+Das Feld **nach oben ziehen** zeigt die vollständige Liste.
 
 | Element | Bedeutung |
 | --- | --- |
-| **Gesamt** oben rechts | Summe aller Preise in der aktuellen Sitzung |
-| 🗂 **Ordner-Zeile** | Gruppiert die Treffer nach Sammelkartenspiel, mit Anzahl und Zwischensumme. Aktuell gibt es nur One Piece — die Struktur ist für weitere Spiele vorbereitet |
-| 🟩 **über Kartennummer** | Die App hat die aufgedruckte Nummer (z. B. `OP01-001`) gelesen — **eindeutig**, auch bei mehreren Karten mit demselben Namen |
-| ⬜ **über Name** | Nur der Name war lesbar — bei gleichnamigen Karten (z. B. den vielen „Roronoa Zoro"-Versionen) kann die falsche Variante getroffen sein; kurz prüfen |
+| **Zahl + Betrag** oben | Anzahl der Karten und Gesamtwert der Sammlung |
+| 🗂 **Ordner-Zeile** | Gruppiert nach Sammelkartenspiel, mit Anzahl und Zwischensumme. Aktuell nur One Piece — vorbereitet für weitere Spiele |
+| 🟩 **Nummer + Name** | Kartennummer gelesen **und** Name stimmt überein — höchste Sicherheit |
+| 🟩 **Nummer** | Kartennummer gelesen, Name war nicht lesbar. Die Nummer allein ist bereits eindeutig |
 | **Cardmarket Trend** | Echter Cardmarket-Preis. Steht stattdessen „Durchschnitt" o. Ä., gab es für diese Karte keinen Trendpreis |
-| **✕** | Einzelnen Eintrag entfernen |
-| **Liste leeren** | Alles entfernen (mit Rückfrage) |
+| **Sammlung leeren** | Alles entfernen (mit Rückfrage) |
 
-> **Achtung:** Die Liste lebt nur, solange die App offen ist. Beim Schließen ist sie weg —
-> dauerhaftes Speichern ist noch nicht eingebaut.
+> **Die Sammlung bleibt erhalten.** Sie wird auf dem Gerät gespeichert und ist beim nächsten
+> Öffnen wieder da.
 
 ---
 

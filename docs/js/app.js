@@ -1,8 +1,9 @@
 import { createWorker } from "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js";
-import { findMatches } from "./match.js";
+import { matchCard } from "./match.js";
 import { formatPrice, priceLabel, sumPrices } from "./price.js";
 
-const MATCH_THRESHOLD = 1.3; // ab diesem Score gilt ein Treffer als sicher genug zum Auto-Hinzufuegen
+const CONFIRMATIONS_NEEDED = 2; // dieselbe Kartennummer muss so oft gelesen werden, bevor uebernommen wird
+const CONFIRMATION_WINDOW_MS = 4000; // laeuft die Bestaetigung laenger, wird neu angefangen
 const SAME_CARD_COOLDOWN_MS = 4000; // verhindert Doppel-Eintrag derselben Karte, solange sie im Bild bleibt
 const LOOP_IDLE_GAP_MS = 350; // kurze Pause zwischen zwei Scan-Versuchen
 const GAME_NAME = "One Piece Card Game"; // aktuell einziges Spiel, Liste gruppiert aber schon danach
@@ -213,11 +214,31 @@ scanListPeek.addEventListener("click", () => scanListSheet.classList.toggle("ope
 async function attemptRecognition(sourceCanvas) {
   const w = await getWorker();
   const { data } = await w.recognize(sourceCanvas);
-  const matches = findMatches(data.text, cards, 3);
-  if (matches.length === 0) return null;
-  const top = matches[0];
-  if (top.score < MATCH_THRESHOLD) return null;
-  return { card: top.card, score: top.score, how: top.how };
+  return matchCard(data.text, cards);
+}
+
+// Mehrfachbestaetigung: dieselbe Kartennummer muss mehrmals gelesen werden,
+// bevor die Karte uebernommen wird.
+let pending = { id: null, count: 0, since: 0 };
+
+function handleCandidate(result) {
+  const now = Date.now();
+  if (result.card.id === lastAdded.id && now - lastAdded.at < SAME_CARD_COOLDOWN_MS) return;
+
+  if (pending.id !== result.card.id || now - pending.since > CONFIRMATION_WINDOW_MS) {
+    pending = { id: result.card.id, count: 1, since: now };
+  } else {
+    pending.count++;
+  }
+
+  if (pending.count >= CONFIRMATIONS_NEEDED) {
+    addToSessionList(result.card, result.how);
+    lastAdded = { id: result.card.id, at: now };
+    pending = { id: null, count: 0, since: 0 };
+    flashPill(`✓ ${result.card.name} · ${result.card.id}`, true);
+  } else {
+    flashPill(`Prüfe ${result.card.id} …`, false, 1200);
+  }
 }
 
 async function scanLoop() {
@@ -226,15 +247,11 @@ async function scanLoop() {
   busy = true;
   try {
     if (!captureGuideFrameToCanvas()) { scheduleNext(); return; }
-    const found = await attemptRecognition(stillCanvas);
-    if (found) {
-      const now = Date.now();
-      const isCooldownBlock = found.card.id === lastAdded.id && (now - lastAdded.at) < SAME_CARD_COOLDOWN_MS;
-      if (!isCooldownBlock) {
-        addToSessionList(found.card, found.how);
-        lastAdded = { id: found.card.id, at: now };
-        flashPill(`✓ ${found.card.name} hinzugefügt`, true);
-      }
+    const outcome = await attemptRecognition(stillCanvas);
+    if (outcome.card) {
+      handleCandidate(outcome);
+    } else if (outcome.nameOnlyHint) {
+      flashPill(`„${outcome.nameOnlyHint}" – Kartennummer ins Bild halten`, false, 1800);
     }
   } catch (err) {
     console.error("Scan-Fehler:", err);
@@ -276,15 +293,18 @@ fileFallback.addEventListener("change", async () => {
     stillCanvas.width = outW; stillCanvas.height = outH;
     stillCanvas.getContext("2d").drawImage(img, 0, 0, outW, outH);
     showStatus("Lese Bild...");
-    const found = await attemptRecognition(stillCanvas).catch((e) => { console.error(e); return null; });
+    const outcome = await attemptRecognition(stillCanvas).catch((e) => { console.error(e); return null; });
     hideStatus();
     scanStatusPill.classList.add("show");
-    if (found) {
-      addToSessionList(found.card, found.how);
-      lastAdded = { id: found.card.id, at: Date.now() };
-      flashPill(`✓ ${found.card.name} hinzugefügt`, true, 2200);
+    if (outcome?.card) {
+      // Einzelbild aus der Galerie: hier reicht ein Treffer, es gibt keine Folgebilder.
+      addToSessionList(outcome.card, outcome.how);
+      lastAdded = { id: outcome.card.id, at: Date.now() };
+      flashPill(`✓ ${outcome.card.name} · ${outcome.card.id}`, true, 2200);
+    } else if (outcome?.nameOnlyHint) {
+      flashPill(`„${outcome.nameOnlyHint}" – Kartennummer nicht lesbar`, false, 2600);
     } else {
-      flashPill("Keine Karte im Bild erkannt", false, 2200);
+      flashPill("Keine Kartennummer im Bild gefunden", false, 2200);
     }
   };
   img.src = URL.createObjectURL(file);
