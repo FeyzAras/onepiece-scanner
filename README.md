@@ -1,96 +1,102 @@
 # One Piece TCG Scanner
 
-**Live:** https://feyzaras.github.io/onepiece-scanner/
+Kamera auf eine One-Piece-Karte halten — die Karte wird **automatisch** erkannt und mit Preis in eine
+Liste eingetragen. Kein Knopfdruck pro Karte.
 
-Installierbare PWA (Progressive Web App): Handy-Kamera auf eine One-Piece-TCG-Karte halten,
-auslösen, Karte wird erkannt und mit (aktuell: Platzhalter-)Preis angezeigt.
+Das Projekt enthält zwei Varianten:
+
+| Variante | Ordner | Zustand |
+| --- | --- | --- |
+| **Android-App** (Flutter, native) | `android_app/` | Hauptvariante. APK zum Installieren auf dem Handy. |
+| Web-App (PWA) | `docs/` | Läuft im Browser, installierbar über "Zum Startbildschirm hinzufügen". |
 
 Projektkontext: `2.7.Pythagoras/Projekte/P-001_TCG_Marktplatz_DE/02_Konzeption_Kartenscanner_OnePiece.md`
 im Obsidian-Vault.
 
-## Warum PWA und nicht die ursprünglich geplante Flutter-App?
+---
 
-Die Technikentscheidung `KS-D3` (Konzeptionsdatei) sah Flutter vor. Diese Entwicklungsumgebung
-hier hatte aber **kein Flutter/Android-SDK installiert** und keinen Zugriff auf ein physisches
-Android-Gerät (nur dieser Windows-Rechner, kein verbundenes Handy). Eine Flutter-Umgebung
-unbeaufsichtigt komplett neu aufzusetzen (Android Studio, SDK, Emulator) wäre ein Mehrstunden-Risiko
-mit ungewissem Ausgang gewesen. Eine PWA ist dagegen in Android Chrome vollwertig: echter
-Kamerazugriff, "Zum Startbildschirm hinzufügen" verhält sich wie eine installierte App, Offline-Cache
-über Service Worker. Das ist eine bewusste, dokumentierte Abweichung — keine stille Änderung.
-Native (Flutter) bleibt eine spätere Option, falls echte On-Device-Performance/Store-Vertrieb
-gebraucht wird.
+## Android-App
 
-## Starten (lokale Vorschau am Rechner)
+**Technik:** Flutter + `camera` (Live-Bildstrom) + Google **ML Kit Text Recognition** (On-Device-OCR,
+funktioniert offline, keine Cloud). Kartenkatalog liegt als Asset in der App.
+
+**So funktioniert das Erkennen:**
+1. Die Kamera liefert laufend Bilder (ca. alle 450 ms wird eins ausgewertet).
+2. ML Kit liest den Text auf der Karte.
+3. Abgleich in zwei Stufen:
+   - **Kartennummer** (z. B. `OP01-001`) — eindeutig, trennt auch gleichnamige Karten sauber.
+     Typische OCR-Fehler werden ausgeglichen (`oo01.001` → `OP01-001`), akzeptiert wird nur,
+     was einer real existierenden Karten-ID entspricht.
+   - **Kartenname** — Fallback, wenn die Nummer nicht lesbar war.
+4. Treffer landet in der Session-Liste (Bild, Name, Set-Nummer, Preis). Dieselbe Karte wird
+   innerhalb von 4 Sekunden nicht doppelt eingetragen.
+
+**Bauen:**
+```
+cd android_app
+flutter pub get
+flutter test          # Erkennungslogik gegen den echten Katalog pruefen
+flutter build apk --release
+# Ergebnis: build/app/outputs/flutter-apk/app-release.apk
+```
+
+**Installieren:** APK auf das Handy laden, öffnen, "Installation aus unbekannten Quellen" für den
+Browser/Dateimanager erlauben. Die APK ist mit dem Flutter-Debug-Schlüssel signiert — für den
+Eigengebrauch völlig in Ordnung, für den Play Store bräuchte es einen eigenen Signaturschlüssel.
+
+---
+
+## Web-App (PWA)
 
 ```
 npm install
-npm run build-db   # Kartendaten neu zusammenfuehren + in docs/data/cards.json kopieren
+npm run build-db   # Kartendaten neu aufbauen + nach docs/data/cards.json kopieren
 npm run dev        # Vorschau unter http://localhost:3000
 ```
 
-**Live-Version (GitHub Pages):** siehe oben verlinkt / im Repo unter Settings → Pages.
+Komplett client-seitig, kein Server nötig. OCR läuft per `tesseract.js` im Browser (langsamer als
+ML Kit, ca. 2–4 s pro Versuch). Liegt in `docs/`, damit GitHub Pages es direkt ausliefern kann.
 
-**Auf dem Handy nutzen:** Live-URL in Chrome auf dem Android-Handy öffnen → Menü →
-"Zum Startbildschirm hinzufügen" (oder der "Als App installieren"-Hinweis in der App selbst).
-Danach startet sie wie eine normale App, mit eigenem Icon.
-
-## Architektur
-
-Komplett **client-seitig**, kein eigener Server nötig für den Betrieb. Liegt im Ordner `docs/`
-(GitHub-Pages-Konvention: Branch-Deploy direkt aus `/docs`, keine Actions/Build-Pipeline nötig):
-- `docs/index.html` + `docs/js/app.js` — Kamera-UI, Aufnahme, Steuerung
-- `docs/js/match.js` — Textabgleich OCR-Ergebnis → Katalogeintrag
-- `docs/js/price-mock.js` — Preisberechnung (aktuell Platzhalter, siehe unten)
-- `docs/data/cards.json` — Kartenkatalog (statisch, aus `data/cards.normalized.json` generiert)
-- `docs/manifest.json` + `docs/sw.js` — PWA-Installierbarkeit + Offline-Cache
-- OCR läuft im Browser über `tesseract.js` (von jsDelivr-CDN geladen, Version gepinnt)
-- `server/dev-server.js` — **nur** lokale Vorschau, nicht Teil des Produkts
-- `server/build-db.js` + `scripts/sync-cards.js` — Kartendaten-Pipeline (einmalig/bei Updates ausführen)
+---
 
 ## Was ist echt, was ist Platzhalter?
 
 | Teil | Status |
 | --- | --- |
-| Kamera-UI, **automatisches Dauer-Scannen** (kein Knopf nötig), Session-Liste mit Gesamtwert, Installierbarkeit, Offline-Cache | **echt**, fertig gebaut |
-| OCR-Erkennung | **echt**, läuft wirklich (tesseract.js) |
-| Matching OCR-Text → Karte | **echt, aber einfach** — kann gleichnamige Karten (z.B. mehrere "Roronoa Zoro"-Varianten) nicht unterscheiden. Ausbaustufe: Bild-Hash/Embedding-Abgleich statt/zusätzlich zu Text. |
-| Kartenkatalog | **echt, aktuell gepflegt** — Quelle: npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json) ([github.com/bountycards/onePieceCardGameParser](https://github.com/bountycards/onePieceCardGameParser)), zuletzt aktualisiert 09/2026. 3.868 Karten, deckt OP01–OP17, EB01–04, Promos und ST01–36 ab. |
-| **Preise** | **Platzhalter (Mock), keine echten Zahlen** — siehe unten |
+| Dauer-Scan, Erkennung, Session-Liste, Gesamtwert (beide Varianten) | **echt**, gebaut und auf Logik-Ebene getestet |
+| OCR | **echt** — ML Kit (App) bzw. tesseract.js (Web) |
+| Kartennummer- und Namensabgleich | **echt**, durch automatische Tests abgedeckt (`flutter test`, `node scripts/verify-match.mjs`) |
+| Kartenkatalog | **echt, aktuell** — npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json), Stand 09/2026, 3.868 Karten, OP01–OP17 + EB + Promos + ST01–36 |
+| **Preise** | **Platzhalter (Mock)** — siehe unten |
 
-## Preise: aktueller Stand und was noch fehlt
+## Preise: Stand und was fehlt
 
 Cardmarket veröffentlicht offizielle, frei nutzbare tägliche Preis-Export-Dateien (seit 07/2025,
-One Piece Card Game ausdrücklich abgedeckt, kein API-Antrag nötig). **Der direkte Download dieser
-Datei war aus der Entwicklungs-Sandbox, in der dieses Projekt gebaut wurde, mit HTTP 403
-(Cloudflare-Block) nicht möglich** — getestet, nicht nur vermutet, auch mit Browser-User-Agent.
+One Piece ausdrücklich abgedeckt, kein API-Antrag nötig). **Der Download war aus der
+Entwicklungsumgebung, in der das hier gebaut wurde, durch Cloudflare blockiert (HTTP 403)** —
+getestet, nicht vermutet. Deshalb steht in beiden Varianten ein klar gekennzeichneter
+Platzhalterpreis (`price_mock.dart` / `price-mock.js`).
 
-Das ist ein Befund zu dieser einen Sandbox-Umgebung, keine Aussage über dein eigenes Netzwerk.
-Nächster Schritt dafür: von einem normalen Rechner/Server aus `https://www.cardmarket.com/OnePiece/Data/Price-Guide`
-testen. Funktioniert das, kann ein kleines Importskript (täglich per GitHub Action o.ä.) die echten
-Preise in `docs/data/cards.json` einspielen — das ist noch nicht geschrieben.
+Nächster Schritt: `https://www.cardmarket.com/OnePiece/Data/Price-Guide` von einem normalen
+Rechner/Netz aus testen. Klappt das, importiert ein kleines Skript die echten Preise in
+`assets/cards.json` bzw. `docs/data/cards.json`.
 
-## Grenzen (ehrlich, nicht beschönigt)
+## Grenzen (ehrlich)
 
-1. Kein echtes Handyfoto/keine echte Kamera-Interaktion konnte in dieser Entwicklungsumgebung
-   getestet werden (kein Gerät angeschlossen) — nur der saubere Katalog-Scan. Realistische
-   Bedingungen (Winkel, Beleuchtung, Hochglanzfolie) sind ungetestet. **Besonders ungetestet:**
-   die Koordinaten-Umrechnung, die beim Dauer-Scan nur den Bereich innerhalb des Kartenrahmens aus
-   dem Kamerabild ausschneidet (`captureGuideFrameToCanvas` in `app.js`) — die Mathematik dahinter
-   (object-fit:cover-Skalierung) ist nur am Code durchdacht, nicht an einer echten Kamera
-   verifiziert. Bitte beim ersten Test gezielt darauf achten, ob der ausgeschnittene Bereich wirklich
-   dem Rahmen auf dem Bildschirm entspricht.
-2. Kamera-Berechtigung/PWA-Installierbarkeit/Service-Worker-Verhalten konnten nur per Code-Review
-   und durch Laden der statischen Dateien geprüft werden, nicht durch echte Browser-Interaktion
-   (diese Sandbox hat keinen echten Browser mit Kamera). Bitte beim ersten echten Test auf dem Handy
-   kurz Rückmeldung geben, falls etwas nicht wie erwartet reagiert.
-3. Matching unterscheidet nicht zwischen gleichnamigen Karten (siehe Tabelle oben).
-4. Preise sind Platzhalter, keine echten Cardmarket-Zahlen.
-5. Kein automatischer Aktualisierungs-Mechanismus für die Kartendaten eingerichtet — `npm run build-db`
-   muss manuell erneut ausgeführt werden, wenn `one-piece-card-game-json` ein Update bekommt (z.B. neues Set).
+1. **Nicht auf einem echten Gerät getestet.** In der Entwicklungsumgebung war kein Android-Gerät
+   angeschlossen und kein Emulator verfügbar. Getestet wurden: Kompilierung (`flutter analyze`,
+   `flutter build`) und die komplette Erkennungslogik (`flutter test`, 9 Tests). **Nicht** getestet:
+   Kamerabild, ML-Kit-Erkennung auf echten Karten, Bildrotation, Performance, Akkuverbrauch.
+2. Die Bildrotation beim Kamerastream (`_toInputImage` in `main.dart`) ist auf Hochformat und
+   Rückkamera ausgelegt. Falls Karten nicht erkannt werden, ist das der erste Verdächtige.
+3. Preise sind Platzhalter.
+4. Kartendaten werden nicht automatisch aktualisiert — bei einem neuen Set `npm run build-db`
+   ausführen und `assets/cards.json` neu kopieren.
+5. Web-Variante: Der Zuschnitt auf den Kartenrahmen (`captureGuideFrameToCanvas`) ist nur
+   durchgerechnet, nicht an einer echten Kamera verifiziert.
 
 ## Nächste sinnvolle Schritte
-- Cardmarket-Preis-Download von außerhalb dieser Sandbox verifizieren, dann Importskript bauen.
-- Matching um Set-Code/Kartennummer aus dem OCR-Zuschnitt erweitern.
-- Mit echtem Handyfoto testen, Feinschliff an Kamera-Fokus/Ausleuchtung-Hinweisen.
-- Optional: `npm run build-db` regelmäßig automatisiert laufen lassen (z.B. GitHub Action, wöchentlich),
-  damit neue Sets automatisch einfließen.
+- APK auf dem S24 installieren und melden, was passiert (erkennt er Karten? wie schnell?).
+- Cardmarket-Preisimport, sobald der Download von außerhalb der Sandbox klappt.
+- Sammlung dauerhaft speichern (aktuell lebt die Liste nur während der Sitzung).
+- Export (CSV) für die gescannte Liste.
