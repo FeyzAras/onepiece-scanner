@@ -1,8 +1,9 @@
 // Einfache, abhaengigkeitsfreie Textaehnlichkeit zum Abgleich von OCR-Rohtext gegen Kartennamen.
-// Bewusst simpel gehalten (Prototyp): Wortueberschneidung + Teilstring-Bonus.
-// Ausbaustufe laut Konzeption (KS-20): Bild-Hash/Embedding-Abgleich statt/zusaetzlich zu OCR-Text.
+// Portiert aus server/match.js (Node-Prototyp) - identische Logik, laeuft hier im Browser.
+// Bewusst simpel (Wortueberschneidung + Teilstring-Bonus). Kann nicht zwischen gleichnamigen
+// Karten unterscheiden (z.B. mehrere "Roronoa Zoro"-Karten) - Ausbaustufe: Bild-Hash/Embedding.
 
-function normalizeText(text) {
+export function normalizeText(text) {
   return (text || "")
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
@@ -10,7 +11,7 @@ function normalizeText(text) {
     .filter(Boolean);
 }
 
-function scoreCard(ocrTokens, ocrRaw, card) {
+function scoreCard(ocrTokens, card) {
   const nameTokens = normalizeText(card.name);
   if (nameTokens.length === 0) return 0;
 
@@ -23,20 +24,16 @@ function scoreCard(ocrTokens, ocrRaw, card) {
   const nameNormalized = nameTokens.join(" ");
   const ocrNormalized = ocrTokens.join(" ");
   if (nameNormalized.length > 2 && ocrNormalized.includes(nameNormalized)) {
-    score += 1; // voller Name als Teilstring im OCR-Text gefunden
+    score += 1;
   }
-
   return score;
 }
 
-function findMatches(ocrText, cards, limit = 5) {
+export function findMatches(ocrText, cards, limit = 5) {
   const ocrTokens = normalizeText(ocrText);
-  const scored = cards
-    .map((card) => ({ card, score: scoreCard(ocrTokens, ocrText, card) }))
+  return cards
+    .map((card) => ({ card, score: scoreCard(ocrTokens, card) }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
-  return scored;
 }
-
-module.exports = { findMatches, normalizeText };

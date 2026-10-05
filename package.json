@@ -1,16 +1,14 @@
 {
-  "name": "onepiece-scanner-prototype",
-  "version": "0.1.0",
+  "name": "onepiece-scanner",
+  "version": "0.2.0",
   "private": true,
-  "description": "Prototyp: One-Piece-TCG-Kartenscanner (Foto -> Erkennung -> Preis). Validiert Datenpipeline + OCR-Erkennung, bevor die Flutter-App gebaut wird.",
+  "description": "One Piece TCG Kartenscanner - installierbare PWA. Kamera drauf halten, Karte erkennen, Sammlung/Preis anzeigen.",
   "type": "commonjs",
   "scripts": {
-    "build-db": "node server/build-db.js",
-    "start": "node server/server.js"
+    "build-db": "node server/build-db.js && node scripts/sync-cards.js",
+    "dev": "node server/dev-server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "multer": "^2.0.0",
-    "tesseract.js": "^5.1.1"
+    "express": "^4.19.2"
   }
 }

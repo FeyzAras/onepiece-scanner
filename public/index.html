@@ -2,141 +2,225 @@
 <html lang="de">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>One Piece Scanner — Prototyp</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>One Piece Scanner</title>
+<meta name="description" content="Karte vor die Kamera halten und sofort erkennen - One Piece TCG Sammlungs-Scanner" />
+<meta name="theme-color" content="#0b0d10" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
 <style>
-  :root { color-scheme: light dark; }
-  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 16px; line-height: 1.4; }
-  h1 { font-size: 1.3rem; }
-  .banner { background: #7a1f1f; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 16px; }
-  .card { border: 1px solid #8884; border-radius: 10px; padding: 12px; margin: 10px 0; display: flex; gap: 12px; align-items: center; }
-  .card img { width: 64px; border-radius: 6px; }
-  .price { font-weight: bold; }
-  .mock { color: #b45; font-size: 0.75rem; display: block; }
-  button { padding: 10px 16px; font-size: 1rem; border-radius: 8px; border: 1px solid #888; cursor: pointer; }
-  #ocrBox { white-space: pre-wrap; background: #8881; padding: 8px; border-radius: 6px; font-size: 0.8rem; max-height: 120px; overflow: auto; }
-  input[type=search] { width: 100%; padding: 8px; font-size: 1rem; box-sizing: border-box; }
-  .status { font-size: 0.85rem; opacity: 0.8; }
+  :root {
+    --bg: #0b0d10;
+    --panel: #15181d;
+    --panel-2: #1d2128;
+    --accent: #e0383d;
+    --accent-2: #ffb703;
+    --text: #f3f4f6;
+    --text-dim: #9aa1ac;
+    --ok: #3ddc84;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overscroll-behavior: none;
+  }
+  #app { position: fixed; inset: 0; overflow: hidden; }
+
+  /* --- Kamera-Ansicht --- */
+  #cameraView { position: absolute; inset: 0; background: #000; }
+  #video, #stillCanvas {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  }
+  #stillCanvas { display: none; }
+
+  #guideLayer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+  #guideFrame {
+    width: min(72vw, 62vh * 0.716);
+    aspect-ratio: 63 / 88;
+    position: relative;
+    box-shadow: 0 0 0 2000px rgba(0,0,0,0.55);
+    border-radius: 14px;
+  }
+  .corner { position: absolute; width: 28px; height: 28px; border: 3px solid var(--accent-2); }
+  .corner.tl { top: -3px; left: -3px; border-right: none; border-bottom: none; border-top-left-radius: 10px; }
+  .corner.tr { top: -3px; right: -3px; border-left: none; border-bottom: none; border-top-right-radius: 10px; }
+  .corner.bl { bottom: -3px; left: -3px; border-right: none; border-top: none; border-bottom-left-radius: 10px; }
+  .corner.br { bottom: -3px; right: -3px; border-left: none; border-top: none; border-bottom-right-radius: 10px; }
+
+  #hint {
+    position: absolute; left: 0; right: 0; text-align: center; top: calc(50% + min(36vw, 31vh*0.716) + 18px);
+    color: #fff; font-size: 0.9rem; text-shadow: 0 1px 4px rgba(0,0,0,0.8); padding: 0 24px;
+  }
+
+  /* --- Topbar --- */
+  #topbar {
+    position: absolute; top: 0; left: 0; right: 0; padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent);
+    z-index: 5;
+  }
+  #topbar .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: 0.3px; }
+  #topbar .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .iconBtn {
+    width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255,255,255,0.12);
+    color: #fff; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .iconBtn:active { background: rgba(255,255,255,0.25); }
+
+  /* --- Bottombar --- */
+  #bottombar {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+    padding: 18px 28px calc(env(safe-area-inset-bottom, 0px) + 26px);
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  }
+  #shutter {
+    width: 78px; height: 78px; border-radius: 50%; background: #fff; border: 6px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0 auto;
+  }
+  #shutter::after { content: ""; width: 58px; height: 58px; border-radius: 50%; background: var(--accent); }
+  #shutter:active::after { background: #a81d21; }
+  #shutter[disabled] { opacity: 0.4; pointer-events: none; }
+  .sideBtn { width: 48px; }
+
+  /* --- Status / Ladezustand --- */
+  #statusBar {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -120px);
+    background: rgba(20,22,26,0.92); padding: 14px 20px; border-radius: 14px; z-index: 10;
+    display: none; flex-direction: column; align-items: center; gap: 10px; min-width: 220px; text-align: center;
+  }
+  #statusBar.show { display: flex; }
+  .spinner {
+    width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.25);
+    border-top-color: var(--accent-2); animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #progressTrack { width: 100%; height: 6px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+  #progressFill { height: 100%; width: 0%; background: var(--accent-2); transition: width 0.2s ease; }
+
+  /* --- Ergebnis-Sheet --- */
+  #resultSheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
+    background: var(--panel); border-radius: 22px 22px 0 0; padding: 18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);
+    transform: translateY(100%); transition: transform 0.28s cubic-bezier(.2,.8,.2,1);
+    max-height: 78vh; overflow-y: auto; box-shadow: 0 -8px 30px rgba(0,0,0,0.5);
+  }
+  #resultSheet.open { transform: translateY(0); }
+  #resultSheet .handle { width: 42px; height: 5px; background: #3a3f47; border-radius: 3px; margin: 0 auto 14px; }
+  .resultCard { display: flex; gap: 14px; padding: 12px; background: var(--panel-2); border-radius: 14px; margin-bottom: 10px; }
+  .resultCard img { width: 70px; border-radius: 8px; flex-shrink: 0; background: #0005; }
+  .resultCard .name { font-weight: 700; font-size: 1.02rem; }
+  .resultCard .meta { color: var(--text-dim); font-size: 0.82rem; margin-top: 2px; }
+  .resultCard .price { font-weight: 700; color: var(--accent-2); margin-top: 6px; }
+  .resultCard .mocktag { display: block; font-size: 0.68rem; color: var(--text-dim); font-weight: 400; }
+  .badge { display: inline-block; font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; background: #2a2f38; color: var(--text-dim); margin-left: 6px; }
+  .badge.best { background: var(--ok); color: #06240f; }
+  #resultActions { display: flex; gap: 10px; margin-top: 8px; }
+  #resultActions button {
+    flex: 1; padding: 13px; border-radius: 12px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  }
+  #scanAgainBtn { background: var(--accent); color: #fff; }
+  #closeSheetBtn { background: #2a2f38; color: var(--text); }
+  #ocrDebug { font-size: 0.72rem; color: var(--text-dim); background: #0005; padding: 8px; border-radius: 8px; margin-top: 10px; white-space: pre-wrap; max-height: 70px; overflow: auto; }
+  #noMatch { text-align: center; padding: 20px 10px; color: var(--text-dim); }
+
+  /* --- Katalog-Panel --- */
+  #catalogPanel {
+    position: absolute; inset: 0; background: var(--bg); z-index: 20; transform: translateX(100%);
+    transition: transform 0.25s ease; display: flex; flex-direction: column;
+  }
+  #catalogPanel.open { transform: translateX(0); }
+  #catalogHeader { display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top,0px) + 14px) 16px 10px; }
+  #catalogSearch { flex: 1; padding: 12px 14px; border-radius: 12px; border: none; background: var(--panel-2); color: var(--text); font-size: 1rem; }
+  #catalogList { flex: 1; overflow-y: auto; padding: 4px 16px 24px; }
+  .catalogItem { display: flex; gap: 12px; padding: 10px; border-bottom: 1px solid #ffffff10; align-items: center; }
+  .catalogItem img { width: 44px; border-radius: 6px; }
+  .catalogItem .n { font-weight: 600; font-size: 0.92rem; }
+  .catalogItem .m { font-size: 0.78rem; color: var(--text-dim); }
+
+  /* --- Install-Hinweis --- */
+  #installPill {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 70px); left: 50%; transform: translateX(-50%);
+    background: var(--accent-2); color: #241a00; padding: 8px 16px; border-radius: 30px; font-size: 0.82rem;
+    font-weight: 700; z-index: 6; display: none; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  #installPill.show { display: block; }
+
+  #permissionScreen {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; padding: 32px; text-align: center; background: var(--bg); z-index: 30;
+  }
+  #permissionScreen button { padding: 14px 26px; border-radius: 30px; border: none; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; }
+  #permissionScreen.hidden { display: none; }
+  #fileFallback { display: none; }
 </style>
 </head>
 <body>
-  <h1>One Piece TCG Scanner — Prototyp</h1>
-  <div class="banner">
-    ⚠️ Prototyp zur Validierung der Pipeline (Erkennung + Datenmodell). Preise sind <strong>MOCK-Werte</strong>,
-    keine echte Cardmarket-Anbindung (siehe README). Kartendatenbank-Stand: April 2024, nur OP01–OP06 + Promos + ST01–13.
+<div id="app">
+
+  <div id="cameraView">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="stillCanvas"></canvas>
+    <div id="guideLayer">
+      <div id="guideFrame">
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+      </div>
+    </div>
+    <div id="hint">Karte mittig im Rahmen platzieren, gutes Licht hilft</div>
   </div>
 
-  <h2>1. Karte scannen</h2>
-  <p>
-    <label>Foto aufnehmen oder Datei wählen:<br />
-      <input type="file" id="fileInput" accept="image/*" capture="environment" />
-    </label>
-  </p>
-  <p>Kein Smartphone zur Hand? Testbild verwenden:</p>
-  <button id="useSample">Testbild nutzen (OP01-001 Roronoa Zoro)</button>
-  <button id="scanBtn" disabled>Scannen</button>
-
-  <p class="status" id="status"></p>
-  <div id="ocrWrap" style="display:none">
-    <h3>OCR-Rohtext</h3>
-    <div id="ocrBox"></div>
+  <div id="topbar">
+    <div class="brand"><span class="dot"></span> One Piece Scanner</div>
+    <button class="iconBtn" id="openCatalogBtn" title="Katalog durchsuchen">&#128269;</button>
   </div>
 
-  <div id="results"></div>
+  <div id="installPill">Als App installieren</div>
 
-  <h2>2. Katalog durchsuchen</h2>
-  <input type="search" id="searchBox" placeholder="Kartenname suchen, z.B. Luffy" />
-  <div id="searchResults"></div>
+  <div id="bottombar">
+    <button class="iconBtn sideBtn" id="galleryBtn" title="Bild auswählen">&#128247;</button>
+    <div id="shutter"></div>
+    <div class="sideBtn"></div>
+  </div>
+  <input type="file" id="fileFallback" accept="image/*" capture="environment" />
 
-<script>
-  const fileInput = document.getElementById("fileInput");
-  const scanBtn = document.getElementById("scanBtn");
-  const useSample = document.getElementById("useSample");
-  const statusEl = document.getElementById("status");
-  const resultsEl = document.getElementById("results");
-  const ocrWrap = document.getElementById("ocrWrap");
-  const ocrBox = document.getElementById("ocrBox");
+  <div id="statusBar">
+    <div class="spinner"></div>
+    <div id="statusText">Starte Kamera...</div>
+    <div id="progressTrack"><div id="progressFill"></div></div>
+  </div>
 
-  let pendingBlob = null;
-  let pendingName = "upload.png";
+  <div id="resultSheet">
+    <div class="handle"></div>
+    <div id="resultBody"></div>
+    <div id="resultActions">
+      <button id="closeSheetBtn">Schließen</button>
+      <button id="scanAgainBtn">Nochmal scannen</button>
+    </div>
+  </div>
 
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files[0]) {
-      pendingBlob = fileInput.files[0];
-      pendingName = fileInput.files[0].name;
-      scanBtn.disabled = false;
-      statusEl.textContent = "Bild bereit: " + pendingName;
-    }
-  });
+  <div id="catalogPanel">
+    <div id="catalogHeader">
+      <button class="iconBtn" id="closeCatalogBtn">&#10005;</button>
+      <input type="search" id="catalogSearch" placeholder="Kartenname suchen, z.B. Luffy" />
+    </div>
+    <div id="catalogList"></div>
+  </div>
 
-  useSample.addEventListener("click", async () => {
-    statusEl.textContent = "Lade Testbild...";
-    const r = await fetch("/data/sample_OP01-001.png");
-    pendingBlob = await r.blob();
-    pendingName = "sample_OP01-001.png";
-    scanBtn.disabled = false;
-    statusEl.textContent = "Testbild bereit (OP01-001 Roronoa Zoro)";
-  });
+  <div id="permissionScreen" class="hidden">
+    <div style="font-size:2.4rem">📷</div>
+    <h2 style="margin:0">Kamera-Zugriff nötig</h2>
+    <p style="color:var(--text-dim); max-width: 320px">
+      Zum Scannen braucht die App Zugriff auf deine Kamera. Du kannst stattdessen auch ein Foto aus der Galerie wählen.
+    </p>
+    <button id="retryPermissionBtn">Erneut versuchen</button>
+    <button id="useGalleryInstead" style="background:#2a2f38">Foto aus Galerie wählen</button>
+  </div>
 
-  scanBtn.addEventListener("click", async () => {
-    if (!pendingBlob) return;
-    scanBtn.disabled = true;
-    statusEl.textContent = "Erkenne Karte... (erster Aufruf laedt das OCR-Modell, kann 10-20s dauern)";
-    resultsEl.innerHTML = "";
-    ocrWrap.style.display = "none";
-
-    const form = new FormData();
-    form.append("image", pendingBlob, pendingName);
-
-    try {
-      const res = await fetch("/api/scan", { method: "POST", body: form });
-      const data = await res.json();
-      if (data.error) {
-        statusEl.textContent = "Fehler: " + data.error;
-        return;
-      }
-      statusEl.textContent = `Fertig in ${data.durationMs} ms. ${data.matches.length} Treffer.`;
-      ocrWrap.style.display = "block";
-      ocrBox.textContent = data.ocrText.trim() || "(kein Text erkannt)";
-
-      resultsEl.innerHTML = data.matches.map(m => `
-        <div class="card">
-          ${m.img ? `<img src="${m.img}" alt="">` : ""}
-          <div>
-            <div><strong>${m.name}</strong> (${m.id})</div>
-            <div>${m.cardType} · ${m.color} · Rarity ${m.rarity}</div>
-            <div class="price">${m.price.amount.toFixed(2)} ${m.price.currency}
-              <span class="mock">${m.price.source}</span>
-            </div>
-            <div>Match-Score: ${m.matchScore}</div>
-          </div>
-        </div>
-      `).join("") || "<p>Keine Übereinstimmung gefunden.</p>";
-    } catch (e) {
-      statusEl.textContent = "Fehler: " + e.message;
-    } finally {
-      scanBtn.disabled = false;
-    }
-  });
-
-  const searchBox = document.getElementById("searchBox");
-  const searchResults = document.getElementById("searchResults");
-  let searchTimer = null;
-  searchBox.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(async () => {
-      const q = searchBox.value.trim();
-      if (!q) { searchResults.innerHTML = ""; return; }
-      const res = await fetch("/api/cards?q=" + encodeURIComponent(q));
-      const data = await res.json();
-      searchResults.innerHTML = data.cards.map(c => `
-        <div class="card">
-          ${c.img ? `<img src="${c.img}" alt="">` : ""}
-          <div><strong>${c.name}</strong> (${c.id})<br>${c.cardType} · ${c.color} · Rarity ${c.rarity}</div>
-        </div>
-      `).join("") || "<p>Keine Treffer.</p>";
-    }, 300);
-  });
-</script>
+</div>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -1,69 +1,85 @@
-# One Piece TCG Scanner — Prototyp
+# One Piece TCG Scanner
 
-Validierungs-Prototyp für das Projekt `P-001` / Sub-Konzept "Kartenscanner One Piece TCG"
-(siehe Obsidian: `2.7.Pythagoras/Projekte/P-001_TCG_Marktplatz_DE/02_Konzeption_Kartenscanner_OnePiece.md`).
+Installierbare PWA (Progressive Web App): Handy-Kamera auf eine One-Piece-TCG-Karte halten,
+auslösen, Karte wird erkannt und mit (aktuell: Platzhalter-)Preis angezeigt.
 
-**Zweck:** vor dem Bau der eigentlichen Flutter-App (Entscheidung `KS-D3`) die zwei riskantesten
-Fragen klären: (1) Ist eine Kartenerkennung aus einem Foto mit frei verfügbarer Technik überhaupt
-machbar? (2) Sind Kartendaten + Preisdaten tatsächlich beschaffbar? Dieser Prototyp ist **kein**
-Vorgriff auf die Plattform-Entscheidung — er läuft als Node/Web-Demo, weil das in dieser
-Entwicklungsumgebung sofort lauffähig war (kein Flutter/Android-SDK installiert).
+Projektkontext: `2.7.Pythagoras/Projekte/P-001_TCG_Marktplatz_DE/02_Konzeption_Kartenscanner_OnePiece.md`
+im Obsidian-Vault.
 
-## Status: läuft, End-to-End getestet
+## Warum PWA und nicht die ursprünglich geplante Flutter-App?
+
+Die Technikentscheidung `KS-D3` (Konzeptionsdatei) sah Flutter vor. Diese Entwicklungsumgebung
+hier hatte aber **kein Flutter/Android-SDK installiert** und keinen Zugriff auf ein physisches
+Android-Gerät (nur dieser Windows-Rechner, kein verbundenes Handy). Eine Flutter-Umgebung
+unbeaufsichtigt komplett neu aufzusetzen (Android Studio, SDK, Emulator) wäre ein Mehrstunden-Risiko
+mit ungewissem Ausgang gewesen. Eine PWA ist dagegen in Android Chrome vollwertig: echter
+Kamerazugriff, "Zum Startbildschirm hinzufügen" verhält sich wie eine installierte App, Offline-Cache
+über Service Worker. Das ist eine bewusste, dokumentierte Abweichung — keine stille Änderung.
+Native (Flutter) bleibt eine spätere Option, falls echte On-Device-Performance/Store-Vertrieb
+gebraucht wird.
+
+## Starten (lokale Vorschau am Rechner)
 
 ```
 npm install
-npm run build-db   # fuehrt CardDb.json/2/3 zu data/cards.normalized.json zusammen
-npm start           # Server unter http://localhost:3000
+npm run build-db   # Kartendaten neu zusammenfuehren + in public/data/cards.json kopieren
+npm run dev        # Vorschau unter http://localhost:3000
 ```
 
-Im Browser `http://localhost:3000` öffnen → "Testbild nutzen" → "Scannen". Auf dem Handy
-funktioniert auch die echte Kamera über den Datei-Upload-Button (`capture="environment"`).
+**Auf dem Handy nutzen:** Nach dem Hosting (siehe unten) die URL in Chrome auf dem Android-Handy
+öffnen → Menü → "Zum Startbildschirm hinzufügen" (oder der "Als App installieren"-Hinweis in der
+App selbst). Danach startet sie wie eine normale App, mit eigenem Icon.
 
-Echter Testlauf (siehe `server/test-scan.js`, `node server/test-scan.js` bei laufendem Server):
-Testbild OP01-001 (Roronoa Zoro) → OCR erkennt u.a. den Klartext "Roronoa Zoro" → Matching findet
-`OP01-001` als Treffer (zusammen mit anderen Karten, die ebenfalls "Roronoa Zoro" heißen — siehe
-Grenzen unten).
+## Architektur
 
-## Was ist echt, was ist Mock/Platzhalter?
+Komplett **client-seitig**, kein eigener Server nötig für den Betrieb:
+- `public/index.html` + `public/js/app.js` — Kamera-UI, Aufnahme, Steuerung
+- `public/js/match.js` — Textabgleich OCR-Ergebnis → Katalogeintrag
+- `public/js/price-mock.js` — Preisberechnung (aktuell Platzhalter, siehe unten)
+- `public/data/cards.json` — Kartenkatalog (statisch, aus `data/cards.normalized.json` generiert)
+- `public/manifest.json` + `public/sw.js` — PWA-Installierbarkeit + Offline-Cache
+- OCR läuft im Browser über `tesseract.js` (von jsDelivr-CDN geladen, Version gepinnt)
+- `server/dev-server.js` — **nur** lokale Vorschau, nicht Teil des Produkts
+- `server/build-db.js` + `scripts/sync-cards.js` — Kartendaten-Pipeline (einmalig/bei Updates ausführen)
 
-| Teil | Status | Quelle |
-| --- | --- | --- |
-| Kartenkatalog (Name, Typ, Bild-URL) | **echt**, aber veraltet | [github.com/nemesis312/OnePieceTCGEngCardList](https://github.com/nemesis312/OnePieceTCGEngCardList) — Stand April 2024, deckt nur OP01–OP06 + Promos + ST01–13 ab. Aktuelle Sets (OP07+) fehlen. |
-| Kartenbilder | **echt** | Direkte URLs zu `en.onepiece-cardgame.com` (offizielle Bandai-Seite), aus dem Katalog übernommen. |
-| OCR-Erkennung | **echt**, läuft wirklich | `tesseract.js` (WASM, kein natives Tesseract nötig). Funktioniert auf sauberem Kartenscan; bei echtem Handyfoto (Spiegelung, Winkel, Folie) unklar — nicht getestet, kein echtes Kartenfoto verfügbar. |
-| Matching (Foto → Katalogeintrag) | **echt, aber simpel** | Nur Wortabgleich gegen den Kartennamen. Kann nicht zwischen mehreren Karten mit demselben Namen unterscheiden (z.B. "Roronoa Zoro" kommt als Leader, Charakter, Alt-Art etc. mehrfach vor) — siehe Konzeption `KS-D5`/`KS-20`, genau das soll die spätere Hash-/Embedding-Stufe lösen. |
-| Preise | **MOCK**, nicht echt | Siehe `server/price-mock.js`. Deterministisch nach Rarity, aber **keine echte Cardmarket-Zahl**. |
+## Was ist echt, was ist Platzhalter?
 
-## Warum Preise gemockt sind (konkreter Befund, kein Blindflug)
+| Teil | Status |
+| --- | --- |
+| Kamera-UI, Aufnahme, Installierbarkeit, Offline-Cache | **echt**, fertig gebaut |
+| OCR-Erkennung | **echt**, läuft wirklich (tesseract.js) |
+| Matching OCR-Text → Karte | **echt, aber einfach** — kann gleichnamige Karten (z.B. mehrere "Roronoa Zoro"-Varianten) nicht unterscheiden. Ausbaustufe: Bild-Hash/Embedding-Abgleich statt/zusätzlich zu Text. |
+| Kartenkatalog | **echt, aber veraltet** — Quelle: [github.com/nemesis312/OnePieceTCGEngCardList](https://github.com/nemesis312/OnePieceTCGEngCardList), Stand 04/2024, nur OP01–OP06 + Promos + ST01–13. Neuere Sets fehlen. |
+| **Preise** | **Platzhalter (Mock), keine echten Zahlen** — siehe unten |
 
-Direkter Abruf von `cardmarket.com` (sowohl die Website als auch der dokumentierte
-Price-Guide-Pfad `cardmarket.com/OnePiece/Data/Price-Guide`) wurde aus dieser Entwicklungsumgebung
-heraus getestet — **HTTP 403, Cloudflare-Block**, auch mit Browser-User-Agent. Das ist ein Befund
-zu *dieser Sandbox-Umgebung*, keine Aussage über die künftige Produktionsumgebung (eigener Server,
-andere IP/Netzwerk). Vor dem echten Import muss das von einer Umgebung aus getestet werden, die
-nicht hinter diesem Sandbox-Netzwerk sitzt.
+## Preise: aktueller Stand und was noch fehlt
 
-## Bekannte Grenzen / offene Punkte
+Cardmarket veröffentlicht offizielle, frei nutzbare tägliche Preis-Export-Dateien (seit 07/2025,
+One Piece Card Game ausdrücklich abgedeckt, kein API-Antrag nötig). **Der direkte Download dieser
+Datei war aus der Entwicklungs-Sandbox, in der dieses Projekt gebaut wurde, mit HTTP 403
+(Cloudflare-Block) nicht möglich** — getestet, nicht nur vermutet, auch mit Browser-User-Agent.
 
-1. **Kartendatenbank veraltet** — nur bis OP06 + Promos + ST01-13 (Stand 04/2024). Für Produktion:
-   aktuellere/vollständigere Quelle nötig (`optcgapi.com` sollte eine bessere Abdeckung haben,
-   aber die echten API-Endpunkte wurden in dieser Session nicht gefunden — `/about` gab 404,
-   mehrere Pfad-Rateversuche ebenfalls 404. Für den Prototyp daher auf die GitHub-JSON-Quelle
-   ausgewichen, die direkt funktionierte).
-2. **Matching unterscheidet nicht zwischen gleichnamigen Karten** (siehe Tabelle oben). Für die
-   echte App braucht es mindestens den Set-Code/Kartennummer-Textbereich der Karte im OCR-Zuschnitt,
-   oder direkt die Hash-/Embedding-Stufe aus `KS-20`.
-3. **Kein echtes Handyfoto getestet**, nur der saubere Katalog-Scan als Testbild. Reale Bedingungen
-   (Blickwinkel, Beleuchtung, Hochglanzfolie) sind unklar.
-4. **Cardmarket-Preis-Import nicht möglich aus dieser Sandbox** (siehe oben) — Code dafür ist noch
-   nicht geschrieben, nur der Mock als Platzhalter mit klarer Kennzeichnung.
-5. Dies ist eine Desktop/Web-Demo, keine Mobile-App — Flutter-Entscheidung (`KS-D3`) bleibt
-   unverändert für das Produkt, dieser Prototyp testet nur die Risiko-Annahmen.
+Das ist ein Befund zu dieser einen Sandbox-Umgebung, keine Aussage über dein eigenes Netzwerk.
+Nächster Schritt dafür: von einem normalen Rechner/Server aus `https://www.cardmarket.com/OnePiece/Data/Price-Guide`
+testen. Funktioniert das, kann ein kleines Importskript (täglich per GitHub Action o.ä.) die echten
+Preise in `public/data/cards.json` einspielen — das ist noch nicht geschrieben.
+
+## Grenzen (ehrlich, nicht beschönigt)
+
+1. Kein echtes Handyfoto konnte in dieser Entwicklungsumgebung getestet werden (kein Gerät
+   angeschlossen) — nur der saubere Katalog-Scan. Realistische Bedingungen (Winkel, Beleuchtung,
+   Hochglanzfolie) sind ungetestet.
+2. Kamera-Berechtigung/PWA-Installierbarkeit/Service-Worker-Verhalten konnten nur per Code-Review
+   und durch Laden der statischen Dateien geprüft werden, nicht durch echte Browser-Interaktion
+   (diese Sandbox hat keinen echten Browser mit Kamera). Bitte beim ersten echten Test auf dem Handy
+   kurz Rückmeldung geben, falls etwas nicht wie erwartet reagiert.
+3. Matching unterscheidet nicht zwischen gleichnamigen Karten (siehe Tabelle oben).
+4. Kartenkatalog ist nicht aktuell (nur bis OP06).
+5. Preise sind Platzhalter, keine echten Cardmarket-Zahlen.
 
 ## Nächste sinnvolle Schritte
-- Cardmarket-Export-Download von einer Nicht-Sandbox-Umgebung aus verifizieren.
-- Aktuelle One-Piece-Kartenquelle mit vollständiger Abdeckung finden/bestätigen (echte
-  `optcgapi.com`-Dokumentation klären, z.B. über deren Discord laut Website-Hinweis).
-- Matching um Set-Code/Kartennummer-Erkennung erweitern, um gleichnamige Karten zu trennen.
-- Mit einem echten Handyfoto (schräger Winkel, normales Licht) testen, sobald eins vorliegt.
+- Cardmarket-Preis-Download von außerhalb dieser Sandbox verifizieren, dann Importskript bauen.
+- Aktuellere/vollständigere One-Piece-Kartenquelle finden (`optcgapi.com` sollte besser sein, echte
+  API-Doku war in dieser Session aber nicht auffindbar).
+- Matching um Set-Code/Kartennummer aus dem OCR-Zuschnitt erweitern.
+- Mit echtem Handyfoto testen, Feinschliff an Kamera-Fokus/Ausleuchtung-Hinweisen.
