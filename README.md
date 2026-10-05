@@ -1,5 +1,7 @@
 # One Piece TCG Scanner
 
+**Live:** https://feyzaras.github.io/onepiece-scanner/
+
 Installierbare PWA (Progressive Web App): Handy-Kamera auf eine One-Piece-TCG-Karte halten,
 auslösen, Karte wird erkannt und mit (aktuell: Platzhalter-)Preis angezeigt.
 
@@ -22,22 +24,25 @@ gebraucht wird.
 
 ```
 npm install
-npm run build-db   # Kartendaten neu zusammenfuehren + in public/data/cards.json kopieren
+npm run build-db   # Kartendaten neu zusammenfuehren + in docs/data/cards.json kopieren
 npm run dev        # Vorschau unter http://localhost:3000
 ```
 
-**Auf dem Handy nutzen:** Nach dem Hosting (siehe unten) die URL in Chrome auf dem Android-Handy
-öffnen → Menü → "Zum Startbildschirm hinzufügen" (oder der "Als App installieren"-Hinweis in der
-App selbst). Danach startet sie wie eine normale App, mit eigenem Icon.
+**Live-Version (GitHub Pages):** siehe oben verlinkt / im Repo unter Settings → Pages.
+
+**Auf dem Handy nutzen:** Live-URL in Chrome auf dem Android-Handy öffnen → Menü →
+"Zum Startbildschirm hinzufügen" (oder der "Als App installieren"-Hinweis in der App selbst).
+Danach startet sie wie eine normale App, mit eigenem Icon.
 
 ## Architektur
 
-Komplett **client-seitig**, kein eigener Server nötig für den Betrieb:
-- `public/index.html` + `public/js/app.js` — Kamera-UI, Aufnahme, Steuerung
-- `public/js/match.js` — Textabgleich OCR-Ergebnis → Katalogeintrag
-- `public/js/price-mock.js` — Preisberechnung (aktuell Platzhalter, siehe unten)
-- `public/data/cards.json` — Kartenkatalog (statisch, aus `data/cards.normalized.json` generiert)
-- `public/manifest.json` + `public/sw.js` — PWA-Installierbarkeit + Offline-Cache
+Komplett **client-seitig**, kein eigener Server nötig für den Betrieb. Liegt im Ordner `docs/`
+(GitHub-Pages-Konvention: Branch-Deploy direkt aus `/docs`, keine Actions/Build-Pipeline nötig):
+- `docs/index.html` + `docs/js/app.js` — Kamera-UI, Aufnahme, Steuerung
+- `docs/js/match.js` — Textabgleich OCR-Ergebnis → Katalogeintrag
+- `docs/js/price-mock.js` — Preisberechnung (aktuell Platzhalter, siehe unten)
+- `docs/data/cards.json` — Kartenkatalog (statisch, aus `data/cards.normalized.json` generiert)
+- `docs/manifest.json` + `docs/sw.js` — PWA-Installierbarkeit + Offline-Cache
 - OCR läuft im Browser über `tesseract.js` (von jsDelivr-CDN geladen, Version gepinnt)
 - `server/dev-server.js` — **nur** lokale Vorschau, nicht Teil des Produkts
 - `server/build-db.js` + `scripts/sync-cards.js` — Kartendaten-Pipeline (einmalig/bei Updates ausführen)
@@ -62,7 +67,7 @@ Datei war aus der Entwicklungs-Sandbox, in der dieses Projekt gebaut wurde, mit 
 Das ist ein Befund zu dieser einen Sandbox-Umgebung, keine Aussage über dein eigenes Netzwerk.
 Nächster Schritt dafür: von einem normalen Rechner/Server aus `https://www.cardmarket.com/OnePiece/Data/Price-Guide`
 testen. Funktioniert das, kann ein kleines Importskript (täglich per GitHub Action o.ä.) die echten
-Preise in `public/data/cards.json` einspielen — das ist noch nicht geschrieben.
+Preise in `docs/data/cards.json` einspielen — das ist noch nicht geschrieben.
 
 ## Grenzen (ehrlich, nicht beschönigt)
 
