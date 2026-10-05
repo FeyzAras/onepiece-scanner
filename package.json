@@ -9,6 +9,7 @@
     "dev": "node server/dev-server.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "one-piece-card-game-json": "^0.2.55"
   }
 }

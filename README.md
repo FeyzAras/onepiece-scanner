@@ -49,7 +49,7 @@ Komplett **client-seitig**, kein eigener Server nötig für den Betrieb:
 | Kamera-UI, Aufnahme, Installierbarkeit, Offline-Cache | **echt**, fertig gebaut |
 | OCR-Erkennung | **echt**, läuft wirklich (tesseract.js) |
 | Matching OCR-Text → Karte | **echt, aber einfach** — kann gleichnamige Karten (z.B. mehrere "Roronoa Zoro"-Varianten) nicht unterscheiden. Ausbaustufe: Bild-Hash/Embedding-Abgleich statt/zusätzlich zu Text. |
-| Kartenkatalog | **echt, aber veraltet** — Quelle: [github.com/nemesis312/OnePieceTCGEngCardList](https://github.com/nemesis312/OnePieceTCGEngCardList), Stand 04/2024, nur OP01–OP06 + Promos + ST01–13. Neuere Sets fehlen. |
+| Kartenkatalog | **echt, aktuell gepflegt** — Quelle: npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json) ([github.com/bountycards/onePieceCardGameParser](https://github.com/bountycards/onePieceCardGameParser)), zuletzt aktualisiert 09/2026. 3.868 Karten, deckt OP01–OP17, EB01–04, Promos und ST01–36 ab. |
 | **Preise** | **Platzhalter (Mock), keine echten Zahlen** — siehe unten |
 
 ## Preise: aktueller Stand und was noch fehlt
@@ -74,12 +74,13 @@ Preise in `public/data/cards.json` einspielen — das ist noch nicht geschrieben
    (diese Sandbox hat keinen echten Browser mit Kamera). Bitte beim ersten echten Test auf dem Handy
    kurz Rückmeldung geben, falls etwas nicht wie erwartet reagiert.
 3. Matching unterscheidet nicht zwischen gleichnamigen Karten (siehe Tabelle oben).
-4. Kartenkatalog ist nicht aktuell (nur bis OP06).
-5. Preise sind Platzhalter, keine echten Cardmarket-Zahlen.
+4. Preise sind Platzhalter, keine echten Cardmarket-Zahlen.
+5. Kein automatischer Aktualisierungs-Mechanismus für die Kartendaten eingerichtet — `npm run build-db`
+   muss manuell erneut ausgeführt werden, wenn `one-piece-card-game-json` ein Update bekommt (z.B. neues Set).
 
 ## Nächste sinnvolle Schritte
 - Cardmarket-Preis-Download von außerhalb dieser Sandbox verifizieren, dann Importskript bauen.
-- Aktuellere/vollständigere One-Piece-Kartenquelle finden (`optcgapi.com` sollte besser sein, echte
-  API-Doku war in dieser Session aber nicht auffindbar).
 - Matching um Set-Code/Kartennummer aus dem OCR-Zuschnitt erweitern.
 - Mit echtem Handyfoto testen, Feinschliff an Kamera-Fokus/Ausleuchtung-Hinweisen.
+- Optional: `npm run build-db` regelmäßig automatisiert laufen lassen (z.B. GitHub Action, wöchentlich),
+  damit neue Sets automatisch einfließen.
