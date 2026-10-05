@@ -3,6 +3,8 @@
 Kamera auf eine One-Piece-Karte halten — die Karte wird **automatisch** erkannt und mit Preis in eine
 Liste eingetragen. Kein Knopfdruck pro Karte.
 
+👉 **[Anleitung: Installieren und benutzen](ANLEITUNG.md)**
+
 Das Projekt enthält zwei Varianten:
 
 | Variante | Ordner | Zustand |

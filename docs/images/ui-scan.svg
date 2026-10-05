@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 740" width="360" height="740" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title>Scan-Ansicht der One-Piece-Scanner-App (schematische Darstellung, kein echter Screenshot)</title>
+  <defs>
+    <clipPath id="screen"><rect x="0" y="0" width="360" height="740" rx="26"/></clipPath>
+    <linearGradient id="topFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#screen)">
+    <!-- Kamerabild (angedeutet) -->
+    <rect width="360" height="740" fill="#20242b"/>
+    <rect width="360" height="740" fill="#161a20" opacity="0.55"/>
+    <text x="180" y="120" fill="#454c58" font-size="11" text-anchor="middle">( Live-Kamerabild )</text>
+
+    <!-- Abdunklung ausserhalb des Rahmens -->
+    <path fill="#000" opacity="0.55" fill-rule="evenodd"
+          d="M0 0 H360 V740 H0 Z M50 186 h160 a14 14 0 0 1 14 14 v223 a14 14 0 0 1 -14 14 H50 a14 14 0 0 1 -14 -14 V200 a14 14 0 0 1 14 -14 z"/>
+
+    <!-- Kartenrahmen mit Ecken -->
+    <g stroke="#FFB703" stroke-width="4" fill="none" stroke-linecap="round">
+      <path d="M36 214 V200 a14 14 0 0 1 14 -14 H64"/>
+      <path d="M224 214 V200 a14 14 0 0 0 -14 -14 H196"/>
+      <path d="M36 423 V437 a14 14 0 0 0 14 14 H64"/>
+      <path d="M224 423 V437 a14 14 0 0 1 -14 14 H196"/>
+    </g>
+    <text x="130" y="318" fill="#6a7482" font-size="11" text-anchor="middle">Karte hier hinein halten</text>
+
+    <!-- Topbar -->
+    <rect width="360" height="84" fill="url(#topFade)"/>
+    <circle cx="22" cy="40" r="5" fill="#E0383D"/>
+    <text x="34" y="44" fill="#F3F4F6" font-size="14" font-weight="700">One Piece Scanner</text>
+    <text x="338" y="44" fill="#9AA1AC" font-size="11" text-anchor="end">3868 Karten</text>
+
+    <!-- Bestaetigungs-Pille nach Treffer -->
+    <rect x="96" y="78" width="168" height="30" rx="15" fill="#3DDC84"/>
+    <text x="180" y="98" fill="#06240F" font-size="12.5" font-weight="700" text-anchor="middle">✓ Roronoa Zoro</text>
+
+    <!-- Statusanzeige + Pause-Knopf -->
+    <rect x="114" y="486" width="132" height="26" rx="13" fill="#000" opacity="0.55"/>
+    <circle cx="131" cy="499" r="4" fill="#FFB703"/>
+    <text x="142" y="503" fill="#F3F4F6" font-size="11.5">Scannt automatisch</text>
+
+    <circle cx="180" cy="556" r="31" fill="#fff"/>
+    <circle cx="180" cy="556" r="31" fill="none" stroke="#ffffff" stroke-opacity="0.25" stroke-width="5"/>
+    <g fill="#E0383D">
+      <rect x="172" y="546" width="5" height="20" rx="1.5"/>
+      <rect x="183" y="546" width="5" height="20" rx="1.5"/>
+    </g>
+
+    <!-- Liste (eingeklappt) -->
+    <rect x="0" y="640" width="360" height="100" rx="22" fill="#15181D"/>
+    <rect x="159" y="650" width="42" height="5" rx="2.5" fill="#3A3F47"/>
+    <text x="20" y="684" font-size="14" font-weight="700">
+      <tspan fill="#FFB703">3</tspan><tspan fill="#F3F4F6"> Karten gescannt</tspan>
+    </text>
+    <text x="340" y="684" fill="#9AA1AC" font-size="12" text-anchor="end">Gesamt: 24,13 €</text>
+    <text x="20" y="706" fill="#6a7482" font-size="10.5">nach oben ziehen für die Liste</text>
+  </g>
+  <rect x="0.5" y="0.5" width="359" height="739" rx="26" fill="none" stroke="#2a2f38"/>
+</svg>

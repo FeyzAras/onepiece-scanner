@@ -31,9 +31,15 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Signiert mit dem Debug-Schluessel: ausreichend zum Selbstinstallieren,
+            // fuer den Play Store waere ein eigener Signaturschluessel noetig.
             signingConfig = signingConfigs.getByName("debug")
+            // Ohne diese Regeln bricht R8 ab, weil das ML-Kit-Plugin auf nicht eingebundene
+            // Schrift-Erkenner (Chinesisch/Japanisch/Koreanisch/Devanagari) verweist.
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

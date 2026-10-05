@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 740" width="360" height="740" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
+  <title>Gescannte Karten als Liste (schematische Darstellung, kein echter Screenshot)</title>
+  <defs><clipPath id="screen2"><rect x="0" y="0" width="360" height="740" rx="26"/></clipPath></defs>
+
+  <g clip-path="url(#screen2)">
+    <rect width="360" height="740" fill="#20242b"/>
+    <rect width="360" height="160" fill="#161a20"/>
+    <text x="180" y="86" fill="#454c58" font-size="11" text-anchor="middle">( Kamera läuft weiter )</text>
+
+    <!-- Liste ausgeklappt -->
+    <rect x="0" y="120" width="360" height="620" rx="22" fill="#15181D"/>
+    <rect x="159" y="132" width="42" height="5" rx="2.5" fill="#3A3F47"/>
+
+    <text x="20" y="168" font-size="15" font-weight="700">
+      <tspan fill="#FFB703">3</tspan><tspan fill="#F3F4F6"> Karten gescannt</tspan>
+    </text>
+    <text x="340" y="168" fill="#9AA1AC" font-size="12" text-anchor="end">Gesamt: 24,13 €</text>
+
+    <!-- Zeile 1 -->
+    <g>
+      <rect x="16" y="186" width="328" height="88" rx="14" fill="#1D2128"/>
+      <rect x="26" y="196" width="48" height="67" rx="7" fill="#2b313a"/>
+      <text x="50" y="234" fill="#555d6a" font-size="8" text-anchor="middle">Karten-</text>
+      <text x="50" y="244" fill="#555d6a" font-size="8" text-anchor="middle">bild</text>
+      <text x="86" y="212" fill="#F3F4F6" font-size="14" font-weight="700">Roronoa Zoro</text>
+      <text x="86" y="230" fill="#9AA1AC" font-size="11.5">OP01-001 · L</text>
+      <rect x="86" y="238" width="104" height="17" rx="8.5" fill="#14361F"/>
+      <text x="94" y="250" fill="#3DDC84" font-size="9.5">über Kartennummer</text>
+      <text x="306" y="214" fill="#FFB703" font-size="13.5" font-weight="700" text-anchor="end">8,74 €</text>
+      <text x="306" y="228" fill="#9AA1AC" font-size="8.5" text-anchor="end">MOCK</text>
+      <text x="330" y="222" fill="#9AA1AC" font-size="14" text-anchor="middle">✕</text>
+    </g>
+
+    <!-- Zeile 2 -->
+    <g>
+      <rect x="16" y="282" width="328" height="88" rx="14" fill="#1D2128"/>
+      <rect x="26" y="292" width="48" height="67" rx="7" fill="#2b313a"/>
+      <text x="50" y="330" fill="#555d6a" font-size="8" text-anchor="middle">Karten-</text>
+      <text x="50" y="340" fill="#555d6a" font-size="8" text-anchor="middle">bild</text>
+      <text x="86" y="308" fill="#F3F4F6" font-size="14" font-weight="700">Monkey.D.Luffy</text>
+      <text x="86" y="326" fill="#9AA1AC" font-size="11.5">OP01-003 · L</text>
+      <rect x="86" y="334" width="104" height="17" rx="8.5" fill="#14361F"/>
+      <text x="94" y="346" fill="#3DDC84" font-size="9.5">über Kartennummer</text>
+      <text x="306" y="310" fill="#FFB703" font-size="13.5" font-weight="700" text-anchor="end">9,02 €</text>
+      <text x="306" y="324" fill="#9AA1AC" font-size="8.5" text-anchor="end">MOCK</text>
+      <text x="330" y="318" fill="#9AA1AC" font-size="14" text-anchor="middle">✕</text>
+    </g>
+
+    <!-- Zeile 3, ueber Namen erkannt -->
+    <g>
+      <rect x="16" y="378" width="328" height="88" rx="14" fill="#1D2128"/>
+      <rect x="26" y="388" width="48" height="67" rx="7" fill="#2b313a"/>
+      <text x="50" y="426" fill="#555d6a" font-size="8" text-anchor="middle">Karten-</text>
+      <text x="50" y="436" fill="#555d6a" font-size="8" text-anchor="middle">bild</text>
+      <text x="86" y="404" fill="#F3F4F6" font-size="14" font-weight="700">Nami</text>
+      <text x="86" y="422" fill="#9AA1AC" font-size="11.5">OP01-016 · R</text>
+      <rect x="86" y="430" width="66" height="17" rx="8.5" fill="#2A2F38"/>
+      <text x="94" y="442" fill="#9AA1AC" font-size="9.5">über Name</text>
+      <text x="306" y="406" fill="#FFB703" font-size="13.5" font-weight="700" text-anchor="end">6,37 €</text>
+      <text x="306" y="420" fill="#9AA1AC" font-size="8.5" text-anchor="end">MOCK</text>
+      <text x="330" y="414" fill="#9AA1AC" font-size="14" text-anchor="middle">✕</text>
+    </g>
+
+    <rect x="16" y="482" width="328" height="44" rx="12" fill="#2A2F38"/>
+    <text x="180" y="509" fill="#9AA1AC" font-size="13" text-anchor="middle">Liste leeren</text>
+
+    <text x="180" y="560" fill="#6a7482" font-size="10.5" text-anchor="middle">grünes Etikett = über die Kartennummer eindeutig erkannt</text>
+    <text x="180" y="578" fill="#6a7482" font-size="10.5" text-anchor="middle">graues Etikett = nur über den Namen, bei gleichnamigen Karten prüfen</text>
+  </g>
+  <rect x="0.5" y="0.5" width="359" height="739" rx="26" fill="none" stroke="#2a2f38"/>
+</svg>
