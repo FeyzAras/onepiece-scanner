@@ -60,9 +60,10 @@ Die Liste am unteren Rand **nach oben ziehen**, um alle gescannten Karten zu seh
 | Element | Bedeutung |
 | --- | --- |
 | **Gesamt** oben rechts | Summe aller Preise in der aktuellen Sitzung |
+| 🗂 **Ordner-Zeile** | Gruppiert die Treffer nach Sammelkartenspiel, mit Anzahl und Zwischensumme. Aktuell gibt es nur One Piece — die Struktur ist für weitere Spiele vorbereitet |
 | 🟩 **über Kartennummer** | Die App hat die aufgedruckte Nummer (z. B. `OP01-001`) gelesen — **eindeutig**, auch bei mehreren Karten mit demselben Namen |
 | ⬜ **über Name** | Nur der Name war lesbar — bei gleichnamigen Karten (z. B. den vielen „Roronoa Zoro"-Versionen) kann die falsche Variante getroffen sein; kurz prüfen |
-| **MOCK** am Preis | Platzhalterpreis, **keine echte Cardmarket-Zahl** — siehe unten |
+| **Cardmarket Trend** | Echter Cardmarket-Preis. Steht stattdessen „Durchschnitt" o. Ä., gab es für diese Karte keinen Trendpreis |
 | **✕** | Einzelnen Eintrag entfernen |
 | **Liste leeren** | Alles entfernen (mit Rückfrage) |
 
@@ -73,23 +74,36 @@ Die Liste am unteren Rand **nach oben ziehen**, um alle gescannten Karten zu seh
 
 ## 4. Zu den Preisen
 
-Die angezeigten Preise sind **Platzhalter**, berechnet aus der Seltenheitsstufe. Sie sind klar mit
-`MOCK` markiert, damit sie nicht versehentlich für echte Marktpreise gehalten werden.
+Die Preise sind **echte Cardmarket-Preise** — 3.865 von 3.868 Karten (99,9 %) haben einen.
+Angezeigt wird Cardmarkets **Trendpreis**, der Stand steht unter dem Betrag.
 
-Der Weg zu echten Preisen ist geklärt, aber noch nicht umgesetzt: Cardmarket veröffentlicht seit
-Juli 2025 **offizielle tägliche Preis-Export-Dateien** zur freien Nutzung, One Piece ist abgedeckt.
-Der Download war aus der Entwicklungsumgebung heraus durch Cloudflare blockiert (HTTP 403) — von
-einem normalen Anschluss aus sollte er funktionieren. Dann kann ein kleines Importskript die echten
-Preise einspielen.
+Sie stammen aus den Export-Dateien, die Cardmarket seit Juli 2025 selbst täglich veröffentlicht und
+ausdrücklich zur Nutzung in eigenen Anwendungen freigibt — kein API-Zugang, kein Scraping.
+
+**Wichtig:** Die Preise sind in der App **fest eingebaut**, nicht live. Sie entsprechen dem Stand,
+der beim Bauen der App aktuell war. Für neuere Preise muss eine neue Version gebaut werden —
+automatische Aktualisierung ist noch nicht eingebaut.
+
+**Eine bekannte Ungenauigkeit:** Alternative Artworks („Alt Art") bekommen derzeit den Preis der
+normalen Version, obwohl sie real meist deutlich teurer sind. Cardmarket führt beide unter demselben
+Namen, eine saubere Trennung braucht noch Zusatzarbeit.
 
 ---
 
 ## 5. Wenn etwas nicht klappt
 
+**Eingebaute Diagnose:** Halte den **Kopfbereich oben** (dort, wo „One Piece Scanner" steht) kurz
+gedrückt. Dann erscheint eine Anzeige mit: wie viele Kamerabilder ankommen, wie viele davon
+ausgewertet wurden, welches Bildformat die Kamera liefert, welchen Text die Erkennung zuletzt
+gelesen hat und ob ein Fehler auftrat. Nochmal lange drücken blendet sie wieder aus.
+
+Das ist der schnellste Weg, ein Problem einzugrenzen — mach davon einen Screenshot, wenn etwas
+nicht geht.
+
 | Problem | Was tun |
 | --- | --- |
 | Kamera bleibt schwarz | Berechtigung prüfen: Einstellungen → Apps → One Piece Scanner → Berechtigungen → Kamera |
-| Es wird gar nichts erkannt | Mehr Licht, Karte näher ran, ruhiger halten. Hilft das nicht, melde dich — dann ist vermutlich die Bilddrehung auf deinem Gerät anders als angenommen |
+| Es wird gar nichts erkannt | Diagnose einblenden (siehe oben). Steht bei „Bilder von der Kamera" eine Zahl, die steigt, kommt das Bild an. Steht bei „Gelesener Text" nichts, liegt es an Licht/Abstand/Drehung — Screenshot schicken |
 | Falsche Variante erkannt | Prüfe das Etikett: steht „über Name" dran, war die Kartennummer nicht lesbar. Karte leicht kippen, damit die Nummer unten besser ins Bild kommt |
 | Kartenbilder bleiben leer | Internetverbindung — die Bilder werden von der offiziellen Bandai-Seite nachgeladen |
 | App ruckelt / Akku heiß | Über den runden Knopf pausieren, wenn du gerade nicht scannst |

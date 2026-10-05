@@ -1,3 +1,46 @@
+/// Preis einer Karte. Quelle sind die taeglich von Cardmarket selbst veroeffentlichten
+/// Export-Dateien (siehe scripts/fetch-cardmarket.js). `basis` sagt, welcher Wert genommen
+/// wurde: 'trend' ist Cardmarkets Trendpreis, sonst Durchschnitt bzw. niedrigster Preis.
+class CardPrice {
+  final double amount;
+  final String currency;
+  final String basis;
+  final String source;
+  final String asOf;
+
+  const CardPrice({
+    required this.amount,
+    required this.currency,
+    required this.basis,
+    required this.source,
+    required this.asOf,
+  });
+
+  bool get isReal => source == 'cardmarket';
+
+  String get basisLabel => switch (basis) {
+        'trend' => 'Trend',
+        'avg' => 'Durchschnitt',
+        'avg7' => 'Ø 7 Tage',
+        'avg30' => 'Ø 30 Tage',
+        'low' => 'günstigster',
+        _ => basis,
+      };
+
+  static CardPrice? fromJson(Map<String, dynamic>? j) {
+    if (j == null) return null;
+    final amount = (j['amount'] as num?)?.toDouble();
+    if (amount == null) return null;
+    return CardPrice(
+      amount: amount,
+      currency: (j['currency'] ?? 'EUR') as String,
+      basis: (j['basis'] ?? 'trend') as String,
+      source: (j['source'] ?? 'cardmarket') as String,
+      asOf: (j['asOf'] ?? '') as String,
+    );
+  }
+}
+
 class OpCard {
   final String id;
   final String baseId;
@@ -10,6 +53,11 @@ class OpCard {
   final int? costLife;
   final String effect;
   final String? img;
+  final CardPrice? price;
+
+  /// Welches Sammelkartenspiel. Aktuell nur One Piece, aber die Scan-Liste
+  /// gruppiert bereits danach, damit weitere Spiele spaeter dazupassen.
+  String get game => 'One Piece Card Game';
 
   const OpCard({
     required this.id,
@@ -23,6 +71,7 @@ class OpCard {
     this.costLife,
     required this.effect,
     this.img,
+    this.price,
   });
 
   factory OpCard.fromJson(Map<String, dynamic> j) => OpCard(
@@ -37,5 +86,6 @@ class OpCard {
         costLife: (j['costLife'] as num?)?.toInt(),
         effect: (j['effect'] ?? '') as String,
         img: j['img'] as String?,
+        price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),
       );
 }

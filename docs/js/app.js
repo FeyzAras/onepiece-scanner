@@ -1,10 +1,11 @@
 import { createWorker } from "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js";
 import { findMatches } from "./match.js";
-import { mockPriceFor } from "./price-mock.js";
+import { formatPrice, priceLabel, sumPrices } from "./price.js";
 
 const MATCH_THRESHOLD = 1.3; // ab diesem Score gilt ein Treffer als sicher genug zum Auto-Hinzufuegen
 const SAME_CARD_COOLDOWN_MS = 4000; // verhindert Doppel-Eintrag derselben Karte, solange sie im Bild bleibt
-const LOOP_IDLE_GAP_MS = 350; // kurze Pause zwischen zwei Scan-Versuchen (schont Akku/CPU etwas)
+const LOOP_IDLE_GAP_MS = 350; // kurze Pause zwischen zwei Scan-Versuchen
+const GAME_NAME = "One Piece Card Game"; // aktuell einziges Spiel, Liste gruppiert aber schon danach
 
 const video = document.getElementById("video");
 const stillCanvas = document.getElementById("stillCanvas");
@@ -40,13 +41,17 @@ let cards = [];
 let worker = null;
 let workerReady = false;
 let cameraStream = null;
-let scanning = false; // true = kontinuierliche Schleife aktiv
-let busy = false; // true waehrend ein einzelner Erkennungsdurchlauf laeuft
+let scanning = false;
+let busy = false;
 let lastAdded = { id: null, at: 0 };
-const sessionList = []; // { uid, card, price, addedAt }
+const sessionList = [];
 
 function formatEUR(n) {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " â‚¬";
+  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
 function showStatus(text, progress) {
@@ -78,7 +83,8 @@ function flashPill(text, ok, duration = 1500) {
 async function loadCards() {
   const res = await fetch("data/cards.json");
   cards = await res.json();
-  console.log(`Kartendatenbank geladen: ${cards.length} Karten`);
+  const withPrice = cards.filter((c) => c.price).length;
+  console.log(`Kartendatenbank geladen: ${cards.length} Karten, davon ${withPrice} mit Cardmarket-Preis`);
 }
 
 async function getWorker() {
@@ -113,8 +119,8 @@ async function startCamera() {
   }
 }
 
-// Schneidet genau den Bereich innerhalb des Kartenrahmens aus dem echten Kamera-Stream aus
-// (nicht aus dem skalierten CSS-Bild), damit OCR nur die Karte sieht statt des ganzen Raums.
+// Schneidet genau den Bereich innerhalb des Kartenrahmens aus dem Kamerabild aus,
+// damit die Texterkennung nur die Karte sieht statt des ganzen Raums.
 function captureGuideFrameToCanvas() {
   const vw = video.videoWidth, vh = video.videoHeight;
   if (!vw || !vh) return false;
@@ -138,9 +144,8 @@ function captureGuideFrameToCanvas() {
   return true;
 }
 
-function addToSessionList(card, price, how = "name") {
-  const entry = { uid: `${card.id}-${Date.now()}`, card, price, how, addedAt: Date.now() };
-  sessionList.unshift(entry);
+function addToSessionList(card, how = "name") {
+  sessionList.unshift({ uid: `${card.id}-${Date.now()}`, card, how, addedAt: Date.now() });
   renderSessionList();
   if (!scanListSheet.classList.contains("open")) {
     scanListSheet.classList.add("peek-bounce");
@@ -148,24 +153,44 @@ function addToSessionList(card, price, how = "name") {
   }
 }
 
+function groupByGame(entries) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const game = entry.card.game || GAME_NAME;
+    if (!groups.has(game)) groups.set(game, []);
+    groups.get(game).push(entry);
+  }
+  return groups;
+}
+
 function renderSessionList() {
   scanCount.textContent = String(sessionList.length);
-  const total = sessionList.reduce((sum, e) => sum + e.price.amount, 0);
-  scanTotal.textContent = `Gesamt: ${formatEUR(total)}`;
+  scanTotal.textContent = `Gesamt: ${formatEUR(sumPrices(sessionList))}`;
   scanListEmpty.style.display = sessionList.length ? "none" : "block";
   clearListBtn.style.display = sessionList.length ? "block" : "none";
-  scanListItems.innerHTML = sessionList.map((e) => `
-    <div class="scanRow" data-uid="${e.uid}">
-      ${e.card.img ? `<img src="${e.card.img}" alt="">` : ""}
-      <div class="info">
-        <div class="name">${escapeHtml(e.card.name)}</div>
-        <div class="meta">${escapeHtml(e.card.id)} Â· ${escapeHtml(e.card.rarity)}</div>
-        <div class="how ${e.how === "number" ? "exact" : ""}">${e.how === "number" ? "Ã¼ber Kartennummer" : "Ã¼ber Name"}</div>
-      </div>
-      <div class="price">${e.price.amount.toFixed(2)} â‚¬<span class="mocktag">MOCK</span></div>
-      <button class="removeBtn" data-remove="${e.uid}">âœ•</button>
-    </div>
-  `).join("");
+
+  const groups = groupByGame(sessionList);
+  let html = "";
+  for (const [game, entries] of groups) {
+    html += `
+      <div class="gameHeader">
+        <span class="folder">🗂</span>
+        <span class="gameName">${escapeHtml(game)}</span>
+        <span class="gameSum">${entries.length} · ${formatEUR(sumPrices(entries))}</span>
+      </div>`;
+    html += entries.map((e) => `
+      <div class="scanRow" data-uid="${e.uid}">
+        ${e.card.img ? `<img src="${e.card.img}" alt="">` : ""}
+        <div class="info">
+          <div class="name">${escapeHtml(e.card.name)}</div>
+          <div class="meta">${escapeHtml(e.card.id)} · ${escapeHtml(e.card.rarity)}</div>
+          <div class="how ${e.how === "number" ? "exact" : ""}">${e.how === "number" ? "über Kartennummer" : "über Name"}</div>
+        </div>
+        <div class="price">${formatPrice(e.card.price)}<span class="pricesrc">${escapeHtml(priceLabel(e.card.price))}</span></div>
+        <button class="removeBtn" data-remove="${e.uid}">✕</button>
+      </div>`).join("");
+  }
+  scanListItems.innerHTML = html;
 }
 
 scanListItems.addEventListener("click", (ev) => {
@@ -184,10 +209,6 @@ clearListBtn.addEventListener("click", () => {
 });
 
 scanListPeek.addEventListener("click", () => scanListSheet.classList.toggle("open"));
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
 
 async function attemptRecognition(sourceCanvas) {
   const w = await getWorker();
@@ -210,10 +231,9 @@ async function scanLoop() {
       const now = Date.now();
       const isCooldownBlock = found.card.id === lastAdded.id && (now - lastAdded.at) < SAME_CARD_COOLDOWN_MS;
       if (!isCooldownBlock) {
-        const price = mockPriceFor(found.card);
-        addToSessionList(found.card, price, found.how);
+        addToSessionList(found.card, found.how);
         lastAdded = { id: found.card.id, at: now };
-        flashPill(`âœ“ ${found.card.name} hinzugefÃ¼gt`, true);
+        flashPill(`✓ ${found.card.name} hinzugefügt`, true);
       }
     }
   } catch (err) {
@@ -230,7 +250,7 @@ function scheduleNext() {
 function beginScanning() {
   scanning = true;
   toggleScanBtn.classList.remove("paused");
-  scanModeLabel.textContent = "lÃ¤uft";
+  scanModeLabel.textContent = "läuft";
   scanStatusPill.classList.add("show");
   scanStatusText.textContent = "Scanne...";
   scanLoop();
@@ -258,14 +278,13 @@ fileFallback.addEventListener("change", async () => {
     showStatus("Lese Bild...");
     const found = await attemptRecognition(stillCanvas).catch((e) => { console.error(e); return null; });
     hideStatus();
+    scanStatusPill.classList.add("show");
     if (found) {
-      addToSessionList(found.card, mockPriceFor(found.card), found.how);
+      addToSessionList(found.card, found.how);
       lastAdded = { id: found.card.id, at: Date.now() };
-      flashPill(`âœ“ ${found.card.name} hinzugefÃ¼gt`, true, 2200);
-      scanStatusPill.classList.add("show");
+      flashPill(`✓ ${found.card.name} hinzugefügt`, true, 2200);
     } else {
       flashPill("Keine Karte im Bild erkannt", false, 2200);
-      scanStatusPill.classList.add("show");
     }
   };
   img.src = URL.createObjectURL(file);
@@ -279,7 +298,10 @@ function renderCatalog(list) {
   catalogList.innerHTML = list.slice(0, 80).map((c) => `
     <div class="catalogItem">
       ${c.img ? `<img src="${c.img}" alt="">` : ""}
-      <div><div class="n">${escapeHtml(c.name)}</div><div class="m">${escapeHtml(c.id)} Â· ${escapeHtml(c.cardType)} Â· ${escapeHtml(c.rarity)}</div></div>
+      <div>
+        <div class="n">${escapeHtml(c.name)}</div>
+        <div class="m">${escapeHtml(c.id)} · ${escapeHtml(c.cardType)} · ${escapeHtml(c.rarity)} · ${formatPrice(c.price)}</div>
+      </div>
     </div>
   `).join("") || `<p style="color:var(--text-dim); text-align:center; margin-top:20px">Keine Treffer</p>`;
 }
@@ -293,7 +315,7 @@ catalogSearch.addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(() => {
     const q = catalogSearch.value.trim().toLowerCase();
-    renderCatalog(q ? cards.filter((c) => c.name.toLowerCase().includes(q)) : cards);
+    renderCatalog(q ? cards.filter((c) => c.name.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)) : cards);
   }, 250);
 });
 
@@ -326,4 +348,3 @@ if ("serviceWorker" in navigator) {
   await loadCards();
   await startCamera();
 })();
-

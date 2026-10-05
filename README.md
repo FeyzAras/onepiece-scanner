@@ -69,19 +69,35 @@ ML Kit, ca. 2–4 s pro Versuch). Liegt in `docs/`, damit GitHub Pages es direkt
 | OCR | **echt** — ML Kit (App) bzw. tesseract.js (Web) |
 | Kartennummer- und Namensabgleich | **echt**, durch automatische Tests abgedeckt (`flutter test`, `node scripts/verify-match.mjs`) |
 | Kartenkatalog | **echt, aktuell** — npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json), Stand 09/2026, 3.868 Karten, OP01–OP17 + EB + Promos + ST01–36 |
-| **Preise** | **Platzhalter (Mock)** — siehe unten |
+| **Preise** | **echte Cardmarket-Preise**, 3.865 von 3.868 Karten (99,9 %) — siehe unten |
 
-## Preise: Stand und was fehlt
+## Preise: echte Cardmarket-Daten
 
-Cardmarket veröffentlicht offizielle, frei nutzbare tägliche Preis-Export-Dateien (seit 07/2025,
-One Piece ausdrücklich abgedeckt, kein API-Antrag nötig). **Der Download war aus der
-Entwicklungsumgebung, in der das hier gebaut wurde, durch Cloudflare blockiert (HTTP 403)** —
-getestet, nicht vermutet. Deshalb steht in beiden Varianten ein klar gekennzeichneter
-Platzhalterpreis (`price_mock.dart` / `price-mock.js`).
+Cardmarket veröffentlicht seit 07/2025 selbst tägliche Export-Dateien und erlaubt deren Nutzung in
+eigenen Anwendungen ausdrücklich — kein API-Antrag, kein Scraping. Die Website `www.cardmarket.com`
+ist zwar durch Cloudflare geschützt (liefert 403), der Datei-Server dahinter aber nicht:
 
-Nächster Schritt: `https://www.cardmarket.com/OnePiece/Data/Price-Guide` von einem normalen
-Rechner/Netz aus testen. Klappt das, importiert ein kleines Skript die echten Preise in
-`assets/cards.json` bzw. `docs/data/cards.json`.
+```
+https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_18.json
+https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_18.json
+```
+
+`18` ist Cardmarkets Spiel-ID für One Piece. Die Produktnamen tragen die Kartennummer im Format
+`Roronoa Zoro (OP01-001)`, darüber läuft die Zuordnung zu unserem Katalog.
+
+**Aktualisieren:**
+```
+node scripts/fetch-cardmarket.js          # lädt beide Dateien neu
+node scripts/import-cardmarket-prices.js  # spielt sie in data/cards.normalized.json ein
+npm run build-db                          # verteilt in docs/ und android_app/assets/
+```
+
+Angezeigt wird Cardmarkets **Trendpreis**; fehlt der, wird auf Durchschnitt bzw. niedrigsten Preis
+zurückgegriffen (steht jeweils unter dem Betrag).
+
+**Bekannte Ungenauigkeit:** Alternative Artworks teilen sich derzeit den Preis der Normalversion.
+Cardmarket führt sie als eigene Produkte, aber ohne unterscheidbaren Namen — eine saubere Trennung
+bräuchte den Abgleich über die Edition.
 
 ## Grenzen (ehrlich)
 
@@ -91,9 +107,10 @@ Rechner/Netz aus testen. Klappt das, importiert ein kleines Skript die echten Pr
    Kamerabild, ML-Kit-Erkennung auf echten Karten, Bildrotation, Performance, Akkuverbrauch.
 2. Die Bildrotation beim Kamerastream (`_toInputImage` in `main.dart`) ist auf Hochformat und
    Rückkamera ausgelegt. Falls Karten nicht erkannt werden, ist das der erste Verdächtige.
-3. Preise sind Platzhalter.
-4. Kartendaten werden nicht automatisch aktualisiert — bei einem neuen Set `npm run build-db`
-   ausführen und `assets/cards.json` neu kopieren.
+3. Preise werden nicht automatisch aktualisiert — die Import-Skripte müssen manuell laufen
+   (Stand der eingespielten Daten steht in der App unter jedem Betrag).
+4. Kartendaten werden ebenfalls nicht automatisch aktualisiert — bei einem neuen Set
+   `npm run build-db` ausführen.
 5. Web-Variante: Der Zuschnitt auf den Kartenrahmen (`captureGuideFrameToCanvas`) ist nur
    durchgerechnet, nicht an einer echten Kamera verifiziert.
 

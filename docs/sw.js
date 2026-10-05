@@ -1,11 +1,11 @@
-const CACHE_NAME = "op-scanner-v1";
+const CACHE_NAME = "op-scanner-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./js/app.js",
   "./js/match.js",
-  "./js/price-mock.js",
+  "./js/price.js",
   "./data/cards.json",
   "./icons/icon.svg",
 ];

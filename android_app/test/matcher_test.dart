@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onepiece_scanner/card_matcher.dart';
 import 'package:onepiece_scanner/card_model.dart';
-import 'package:onepiece_scanner/price_mock.dart';
 
 /// Pruefen die Erkennungslogik gegen den echten Kartenkatalog - ohne Geraet,
 /// laeuft direkt auf dem Rechner (`flutter test`).
@@ -65,12 +64,19 @@ Supernovas/Straw Hat Crew oo01.001 um''';
     expect(matcher.match('zzz qqq wirrer text ohne alles'), isNull);
   });
 
-  test('Preisfunktion ist deterministisch und positiv', () {
+  test('echte Cardmarket-Preise sind eingespielt', () {
     final card = matcher.cards.firstWhere((c) => c.id == 'OP01-001');
-    final a = mockPriceFor(card);
-    final b = mockPriceFor(card);
-    expect(a.amount, b.amount);
-    expect(a.amount, greaterThan(0));
-    expect(a.isMock, isTrue);
+    expect(card.price, isNotNull);
+    expect(card.price!.amount, greaterThan(0));
+    expect(card.price!.currency, 'EUR');
+    expect(card.price!.source, 'cardmarket');
+    expect(card.price!.isReal, isTrue);
+    expect(card.price!.asOf, isNotEmpty);
+  });
+
+  test('fast alle Karten haben einen Preis', () {
+    final withPrice = matcher.cards.where((c) => c.price != null).length;
+    expect(withPrice / matcher.cards.length, greaterThan(0.95));
   });
 }
+
