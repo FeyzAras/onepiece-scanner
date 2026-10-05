@@ -8,9 +8,10 @@
 
 ## 1. App installieren (Android)
 
-1. Auf dem Handy die **Releases-Seite** öffnen:
-   https://github.com/FeyzAras/onepiece-scanner/releases
-2. Unter dem neuesten Eintrag die Datei **`onepiece-scanner.apk`** antippen → wird heruntergeladen.
+1. Auf dem Handy diesen Link öffnen — das ist der direkte Download:
+   **https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.1.0/onepiece-scanner.apk**
+   (Übersicht aller Versionen: https://github.com/FeyzAras/onepiece-scanner/releases)
+2. Die Datei **`onepiece-scanner.apk`** (76 MB) wird heruntergeladen.
 3. Die heruntergeladene Datei öffnen (Benachrichtigung antippen oder in „Downloads").
 4. Android fragt: *„Aus dieser Quelle dürfen keine unbekannten Apps installiert werden"* →
    **Einstellungen** antippen → **„Aus dieser Quelle zulassen"** aktivieren → zurück → **Installieren**.
