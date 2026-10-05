@@ -46,7 +46,7 @@ let lastAdded = { id: null, at: 0 };
 const sessionList = []; // { uid, card, price, addedAt }
 
 function formatEUR(n) {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " â‚¬";
 }
 
 function showStatus(text, progress) {
@@ -138,8 +138,8 @@ function captureGuideFrameToCanvas() {
   return true;
 }
 
-function addToSessionList(card, price) {
-  const entry = { uid: `${card.id}-${Date.now()}`, card, price, addedAt: Date.now() };
+function addToSessionList(card, price, how = "name") {
+  const entry = { uid: `${card.id}-${Date.now()}`, card, price, how, addedAt: Date.now() };
   sessionList.unshift(entry);
   renderSessionList();
   if (!scanListSheet.classList.contains("open")) {
@@ -159,10 +159,11 @@ function renderSessionList() {
       ${e.card.img ? `<img src="${e.card.img}" alt="">` : ""}
       <div class="info">
         <div class="name">${escapeHtml(e.card.name)}</div>
-        <div class="meta">${escapeHtml(e.card.id)} · ${escapeHtml(e.card.rarity)}</div>
+        <div class="meta">${escapeHtml(e.card.id)} Â· ${escapeHtml(e.card.rarity)}</div>
+        <div class="how ${e.how === "number" ? "exact" : ""}">${e.how === "number" ? "Ã¼ber Kartennummer" : "Ã¼ber Name"}</div>
       </div>
-      <div class="price">${e.price.amount.toFixed(2)} €<span class="mocktag">MOCK</span></div>
-      <button class="removeBtn" data-remove="${e.uid}">✕</button>
+      <div class="price">${e.price.amount.toFixed(2)} â‚¬<span class="mocktag">MOCK</span></div>
+      <button class="removeBtn" data-remove="${e.uid}">âœ•</button>
     </div>
   `).join("");
 }
@@ -195,7 +196,7 @@ async function attemptRecognition(sourceCanvas) {
   if (matches.length === 0) return null;
   const top = matches[0];
   if (top.score < MATCH_THRESHOLD) return null;
-  return { card: top.card, score: top.score };
+  return { card: top.card, score: top.score, how: top.how };
 }
 
 async function scanLoop() {
@@ -210,9 +211,9 @@ async function scanLoop() {
       const isCooldownBlock = found.card.id === lastAdded.id && (now - lastAdded.at) < SAME_CARD_COOLDOWN_MS;
       if (!isCooldownBlock) {
         const price = mockPriceFor(found.card);
-        addToSessionList(found.card, price);
+        addToSessionList(found.card, price, found.how);
         lastAdded = { id: found.card.id, at: now };
-        flashPill(`✓ ${found.card.name} hinzugefügt`, true);
+        flashPill(`âœ“ ${found.card.name} hinzugefÃ¼gt`, true);
       }
     }
   } catch (err) {
@@ -229,7 +230,7 @@ function scheduleNext() {
 function beginScanning() {
   scanning = true;
   toggleScanBtn.classList.remove("paused");
-  scanModeLabel.textContent = "läuft";
+  scanModeLabel.textContent = "lÃ¤uft";
   scanStatusPill.classList.add("show");
   scanStatusText.textContent = "Scanne...";
   scanLoop();
@@ -258,9 +259,9 @@ fileFallback.addEventListener("change", async () => {
     const found = await attemptRecognition(stillCanvas).catch((e) => { console.error(e); return null; });
     hideStatus();
     if (found) {
-      addToSessionList(found.card, mockPriceFor(found.card));
+      addToSessionList(found.card, mockPriceFor(found.card), found.how);
       lastAdded = { id: found.card.id, at: Date.now() };
-      flashPill(`✓ ${found.card.name} hinzugefügt`, true, 2200);
+      flashPill(`âœ“ ${found.card.name} hinzugefÃ¼gt`, true, 2200);
       scanStatusPill.classList.add("show");
     } else {
       flashPill("Keine Karte im Bild erkannt", false, 2200);
@@ -278,7 +279,7 @@ function renderCatalog(list) {
   catalogList.innerHTML = list.slice(0, 80).map((c) => `
     <div class="catalogItem">
       ${c.img ? `<img src="${c.img}" alt="">` : ""}
-      <div><div class="n">${escapeHtml(c.name)}</div><div class="m">${escapeHtml(c.id)} · ${escapeHtml(c.cardType)} · ${escapeHtml(c.rarity)}</div></div>
+      <div><div class="n">${escapeHtml(c.name)}</div><div class="m">${escapeHtml(c.id)} Â· ${escapeHtml(c.cardType)} Â· ${escapeHtml(c.rarity)}</div></div>
     </div>
   `).join("") || `<p style="color:var(--text-dim); text-align:center; margin-top:20px">Keine Treffer</p>`;
 }
@@ -325,3 +326,4 @@ if ("serviceWorker" in navigator) {
   await loadCards();
   await startCamera();
 })();
+
