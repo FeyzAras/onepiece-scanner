@@ -51,7 +51,7 @@ Komplett **client-seitig**, kein eigener Server nötig für den Betrieb. Liegt i
 
 | Teil | Status |
 | --- | --- |
-| Kamera-UI, Aufnahme, Installierbarkeit, Offline-Cache | **echt**, fertig gebaut |
+| Kamera-UI, **automatisches Dauer-Scannen** (kein Knopf nötig), Session-Liste mit Gesamtwert, Installierbarkeit, Offline-Cache | **echt**, fertig gebaut |
 | OCR-Erkennung | **echt**, läuft wirklich (tesseract.js) |
 | Matching OCR-Text → Karte | **echt, aber einfach** — kann gleichnamige Karten (z.B. mehrere "Roronoa Zoro"-Varianten) nicht unterscheiden. Ausbaustufe: Bild-Hash/Embedding-Abgleich statt/zusätzlich zu Text. |
 | Kartenkatalog | **echt, aktuell gepflegt** — Quelle: npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json) ([github.com/bountycards/onePieceCardGameParser](https://github.com/bountycards/onePieceCardGameParser)), zuletzt aktualisiert 09/2026. 3.868 Karten, deckt OP01–OP17, EB01–04, Promos und ST01–36 ab. |
@@ -71,9 +71,14 @@ Preise in `docs/data/cards.json` einspielen — das ist noch nicht geschrieben.
 
 ## Grenzen (ehrlich, nicht beschönigt)
 
-1. Kein echtes Handyfoto konnte in dieser Entwicklungsumgebung getestet werden (kein Gerät
-   angeschlossen) — nur der saubere Katalog-Scan. Realistische Bedingungen (Winkel, Beleuchtung,
-   Hochglanzfolie) sind ungetestet.
+1. Kein echtes Handyfoto/keine echte Kamera-Interaktion konnte in dieser Entwicklungsumgebung
+   getestet werden (kein Gerät angeschlossen) — nur der saubere Katalog-Scan. Realistische
+   Bedingungen (Winkel, Beleuchtung, Hochglanzfolie) sind ungetestet. **Besonders ungetestet:**
+   die Koordinaten-Umrechnung, die beim Dauer-Scan nur den Bereich innerhalb des Kartenrahmens aus
+   dem Kamerabild ausschneidet (`captureGuideFrameToCanvas` in `app.js`) — die Mathematik dahinter
+   (object-fit:cover-Skalierung) ist nur am Code durchdacht, nicht an einer echten Kamera
+   verifiziert. Bitte beim ersten Test gezielt darauf achten, ob der ausgeschnittene Bereich wirklich
+   dem Rahmen auf dem Bildschirm entspricht.
 2. Kamera-Berechtigung/PWA-Installierbarkeit/Service-Worker-Verhalten konnten nur per Code-Review
    und durch Laden der statischen Dateien geprüft werden, nicht durch echte Browser-Interaktion
    (diese Sandbox hat keinen echten Browser mit Kamera). Bitte beim ersten echten Test auf dem Handy

@@ -55,6 +55,18 @@
     color: #fff; font-size: 0.9rem; text-shadow: 0 1px 4px rgba(0,0,0,0.8); padding: 0 24px;
   }
 
+  /* --- Live-Scan-Statuspille --- */
+  #scanStatusPill {
+    position: absolute; top: calc(env(safe-area-inset-top,0px) + 64px); left: 50%; transform: translateX(-50%) translateY(-10px);
+    background: rgba(20,22,26,0.88); color: #fff; padding: 9px 18px; border-radius: 30px; font-size: 0.86rem;
+    display: flex; align-items: center; gap: 8px; z-index: 6; opacity: 0; transition: opacity 0.25s ease, transform 0.25s ease;
+    white-space: nowrap; max-width: 80vw; overflow: hidden; text-overflow: ellipsis;
+  }
+  #scanStatusPill.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #scanStatusPill.ok { background: rgba(61,220,132,0.92); color: #06240f; font-weight: 700; }
+  #scanStatusPill .livedot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
   /* --- Topbar --- */
   #topbar {
     position: absolute; top: 0; left: 0; right: 0; padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px 28px;
@@ -77,14 +89,18 @@
     display: flex; align-items: center; justify-content: space-between;
     background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
   }
-  #shutter {
-    width: 78px; height: 78px; border-radius: 50%; background: #fff; border: 6px solid rgba(255,255,255,0.35);
-    display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0 auto;
+  #toggleScanBtn {
+    width: 68px; height: 68px; border-radius: 50%; background: #fff; border: 6px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0 auto; position: relative;
   }
-  #shutter::after { content: ""; width: 58px; height: 58px; border-radius: 50%; background: var(--accent); }
-  #shutter:active::after { background: #a81d21; }
-  #shutter[disabled] { opacity: 0.4; pointer-events: none; }
+  #toggleScanBtn::after { content: ""; width: 46px; height: 46px; border-radius: 50%; background: var(--accent); transition: all 0.15s ease; }
+  #toggleScanBtn.paused::after { border-radius: 8px; width: 36px; height: 36px; background: var(--text-dim); }
+  #toggleScanBtn[disabled] { opacity: 0.4; pointer-events: none; }
   .sideBtn { width: 48px; }
+  #scanModeLabel {
+    position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 8px;
+    font-size: 0.72rem; color: var(--text-dim); white-space: nowrap;
+  }
 
   /* --- Status / Ladezustand --- */
   #statusBar {
@@ -101,31 +117,35 @@
   #progressTrack { width: 100%; height: 6px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
   #progressFill { height: 100%; width: 0%; background: var(--accent-2); transition: width 0.2s ease; }
 
-  /* --- Ergebnis-Sheet --- */
-  #resultSheet {
+  /* --- Scan-Liste (Session), immer sichtbarer Peek + ausklappbar --- */
+  #scanListSheet {
     position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
-    background: var(--panel); border-radius: 22px 22px 0 0; padding: 18px 18px calc(env(safe-area-inset-bottom,0px) + 18px);
-    transform: translateY(100%); transition: transform 0.28s cubic-bezier(.2,.8,.2,1);
-    max-height: 78vh; overflow-y: auto; box-shadow: 0 -8px 30px rgba(0,0,0,0.5);
+    background: var(--panel); border-radius: 22px 22px 0 0;
+    transform: translateY(calc(100% - 64px)); transition: transform 0.28s cubic-bezier(.2,.8,.2,1);
+    max-height: 78vh; display: flex; flex-direction: column; box-shadow: 0 -8px 30px rgba(0,0,0,0.5);
   }
-  #resultSheet.open { transform: translateY(0); }
-  #resultSheet .handle { width: 42px; height: 5px; background: #3a3f47; border-radius: 3px; margin: 0 auto 14px; }
-  .resultCard { display: flex; gap: 14px; padding: 12px; background: var(--panel-2); border-radius: 14px; margin-bottom: 10px; }
-  .resultCard img { width: 70px; border-radius: 8px; flex-shrink: 0; background: #0005; }
-  .resultCard .name { font-weight: 700; font-size: 1.02rem; }
-  .resultCard .meta { color: var(--text-dim); font-size: 0.82rem; margin-top: 2px; }
-  .resultCard .price { font-weight: 700; color: var(--accent-2); margin-top: 6px; }
-  .resultCard .mocktag { display: block; font-size: 0.68rem; color: var(--text-dim); font-weight: 400; }
+  #scanListSheet.open { transform: translateY(0); }
+  #scanListSheet.peek-bounce { transform: translateY(calc(100% - 92px)); }
+  #scanListPeek {
+    display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; flex-shrink: 0;
+    position: relative;
+  }
+  #scanListPeek .handle { position: absolute; left: 50%; top: 8px; transform: translateX(-50%); width: 42px; height: 5px; background: #3a3f47; border-radius: 3px; }
+  #scanListPeek .count { font-weight: 700; }
+  #scanListPeek .count .n { color: var(--accent-2); }
+  #scanListPeek .total { color: var(--text-dim); font-size: 0.88rem; }
+  #scanListBody { overflow-y: auto; padding: 0 16px calc(env(safe-area-inset-bottom,0px) + 16px); }
+  #scanListEmpty { text-align: center; padding: 20px 10px 30px; color: var(--text-dim); font-size: 0.88rem; }
+  .scanRow { display: flex; gap: 12px; padding: 10px; background: var(--panel-2); border-radius: 14px; margin-bottom: 8px; align-items: center; }
+  .scanRow img { width: 52px; border-radius: 7px; flex-shrink: 0; background: #0005; }
+  .scanRow .info { flex: 1; min-width: 0; }
+  .scanRow .name { font-weight: 700; font-size: 0.94rem; }
+  .scanRow .meta { color: var(--text-dim); font-size: 0.76rem; margin-top: 1px; }
+  .scanRow .price { font-weight: 700; color: var(--accent-2); font-size: 0.92rem; white-space: nowrap; }
+  .scanRow .removeBtn { background: none; border: none; color: var(--text-dim); font-size: 1.1rem; padding: 4px 8px; cursor: pointer; }
+  .mocktag { display: block; font-size: 0.64rem; color: var(--text-dim); font-weight: 400; }
   .badge { display: inline-block; font-size: 0.68rem; padding: 2px 7px; border-radius: 20px; background: #2a2f38; color: var(--text-dim); margin-left: 6px; }
-  .badge.best { background: var(--ok); color: #06240f; }
-  #resultActions { display: flex; gap: 10px; margin-top: 8px; }
-  #resultActions button {
-    flex: 1; padding: 13px; border-radius: 12px; border: none; font-size: 0.95rem; font-weight: 600; cursor: pointer;
-  }
-  #scanAgainBtn { background: var(--accent); color: #fff; }
-  #closeSheetBtn { background: #2a2f38; color: var(--text); }
-  #ocrDebug { font-size: 0.72rem; color: var(--text-dim); background: #0005; padding: 8px; border-radius: 8px; margin-top: 10px; white-space: pre-wrap; max-height: 70px; overflow: auto; }
-  #noMatch { text-align: center; padding: 20px 10px; color: var(--text-dim); }
+  #clearListBtn { width: 100%; padding: 12px; margin: 4px 0 10px; border-radius: 12px; border: none; background: #2a2f38; color: var(--text-dim); font-size: 0.85rem; cursor: pointer; }
 
   /* --- Katalog-Panel --- */
   #catalogPanel {
@@ -170,8 +190,10 @@
         <div class="corner bl"></div><div class="corner br"></div>
       </div>
     </div>
-    <div id="hint">Karte mittig im Rahmen platzieren, gutes Licht hilft</div>
+    <div id="hint">Karte ins Bild halten - wird automatisch erkannt</div>
   </div>
+
+  <div id="scanStatusPill"><span class="livedot"></span><span id="scanStatusText">Scanne...</span></div>
 
   <div id="topbar">
     <div class="brand"><span class="dot"></span> One Piece Scanner</div>
@@ -182,7 +204,10 @@
 
   <div id="bottombar">
     <button class="iconBtn sideBtn" id="galleryBtn" title="Bild auswählen">&#128247;</button>
-    <div id="shutter"></div>
+    <div style="position:relative">
+      <div id="scanModeLabel">läuft</div>
+      <div id="toggleScanBtn" title="Automatisches Scannen pausieren/fortsetzen"></div>
+    </div>
     <div class="sideBtn"></div>
   </div>
   <input type="file" id="fileFallback" accept="image/*" capture="environment" />
@@ -193,12 +218,16 @@
     <div id="progressTrack"><div id="progressFill"></div></div>
   </div>
 
-  <div id="resultSheet">
-    <div class="handle"></div>
-    <div id="resultBody"></div>
-    <div id="resultActions">
-      <button id="closeSheetBtn">Schließen</button>
-      <button id="scanAgainBtn">Nochmal scannen</button>
+  <div id="scanListSheet">
+    <div id="scanListPeek">
+      <div class="handle"></div>
+      <div class="count"><span class="n" id="scanCount">0</span> Karten gescannt</div>
+      <div class="total" id="scanTotal">Gesamt: 0,00 €</div>
+    </div>
+    <div id="scanListBody">
+      <div id="scanListEmpty">Noch keine Karte erkannt - halte eine Karte vor die Kamera.</div>
+      <div id="scanListItems"></div>
+      <button id="clearListBtn" style="display:none">Liste leeren</button>
     </div>
   </div>
 
