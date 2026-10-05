@@ -1,0 +1,574 @@
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:camera/camera.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+
+import 'card_matcher.dart';
+import 'card_model.dart';
+import 'price_mock.dart';
+
+const Duration kFrameInterval = Duration(milliseconds: 450);
+const Duration kSameCardCooldown = Duration(seconds: 4);
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  runApp(const OpScannerApp());
+}
+
+class OpScannerApp extends StatelessWidget {
+  const OpScannerApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'One Piece Scanner',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0B0D10),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFE0383D),
+          secondary: Color(0xFFFFB703),
+          surface: Color(0xFF15181D),
+        ),
+      ),
+      home: const ScannerPage(),
+    );
+  }
+}
+
+class ScanEntry {
+  final OpCard card;
+  final CardPrice price;
+  final String how;
+  final DateTime at;
+  ScanEntry({required this.card, required this.price, required this.how, required this.at});
+}
+
+class ScannerPage extends StatefulWidget {
+  const ScannerPage({super.key});
+
+  @override
+  State<ScannerPage> createState() => _ScannerPageState();
+}
+
+class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
+  CameraController? _controller;
+  CameraDescription? _camera;
+  final TextRecognizer _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+
+  CardMatcher? _matcher;
+  final List<ScanEntry> _session = [];
+
+  bool _busy = false;
+  bool _scanning = true;
+  bool _cardsLoaded = false;
+  String? _fatalError;
+  String? _flash;
+  DateTime _lastFrame = DateTime.fromMillisecondsSinceEpoch(0);
+  String? _lastId;
+  DateTime _lastAdd = DateTime.fromMillisecondsSinceEpoch(0);
+  Timer? _flashTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      await _loadCards();
+      await _initCamera();
+    } catch (e) {
+      if (mounted) setState(() => _fatalError = e.toString());
+    }
+  }
+
+  Future<void> _loadCards() async {
+    final raw = await rootBundle.loadString('assets/cards.json');
+    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>().map(OpCard.fromJson).toList();
+    if (!mounted) return;
+    setState(() {
+      _matcher = CardMatcher(list);
+      _cardsLoaded = true;
+    });
+  }
+
+  Future<void> _initCamera() async {
+    final cameras = await availableCameras();
+    if (cameras.isEmpty) throw Exception('Keine Kamera gefunden');
+    _camera = cameras.firstWhere(
+      (c) => c.lensDirection == CameraLensDirection.back,
+      orElse: () => cameras.first,
+    );
+    final controller = CameraController(
+      _camera!,
+      ResolutionPreset.high,
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.nv21,
+    );
+    await controller.initialize();
+    if (!mounted) {
+      await controller.dispose();
+      return;
+    }
+    await controller.startImageStream(_onFrame);
+    setState(() => _controller = controller);
+  }
+
+  void _onFrame(CameraImage image) {
+    if (!_scanning || _busy || _matcher == null) return;
+    final now = DateTime.now();
+    if (now.difference(_lastFrame) < kFrameInterval) return;
+    _lastFrame = now;
+    _busy = true;
+    _analyze(image).whenComplete(() => _busy = false);
+  }
+
+  Future<void> _analyze(CameraImage image) async {
+    final input = _toInputImage(image);
+    if (input == null) return;
+    try {
+      final recognized = await _recognizer.processImage(input);
+      final text = recognized.text;
+      if (text.trim().isEmpty) return;
+      final result = _matcher!.match(text);
+      if (result != null) _maybeAdd(result);
+    } catch (_) {
+      // Einzelne fehlgeschlagene Frames sind normal (Bewegung, Unschaerfe) - still ignorieren.
+    }
+  }
+
+  InputImage? _toInputImage(CameraImage image) {
+    final camera = _camera;
+    if (camera == null || image.planes.isEmpty) return null;
+    final rotation = InputImageRotationValue.fromRawValue(camera.sensorOrientation);
+    final format = InputImageFormatValue.fromRawValue(image.format.raw);
+    if (rotation == null || format == null) return null;
+    final plane = image.planes.first;
+    return InputImage.fromBytes(
+      bytes: plane.bytes,
+      metadata: InputImageMetadata(
+        size: Size(image.width.toDouble(), image.height.toDouble()),
+        rotation: rotation,
+        format: format,
+        bytesPerRow: plane.bytesPerRow,
+      ),
+    );
+  }
+
+  void _maybeAdd(MatchResult result) {
+    final now = DateTime.now();
+    if (result.card.id == _lastId && now.difference(_lastAdd) < kSameCardCooldown) return;
+    _lastId = result.card.id;
+    _lastAdd = now;
+    if (!mounted) return;
+    setState(() {
+      _session.insert(0, ScanEntry(card: result.card, price: mockPriceFor(result.card), how: result.how, at: now));
+      _flash = result.card.name;
+    });
+    HapticFeedback.mediumImpact();
+    _flashTimer?.cancel();
+    _flashTimer = Timer(const Duration(milliseconds: 1800), () {
+      if (mounted) setState(() => _flash = null);
+    });
+  }
+
+  void _toggleScanning() {
+    setState(() => _scanning = !_scanning);
+  }
+
+  void _removeAt(int index) {
+    setState(() => _session.removeAt(index));
+  }
+
+  Future<void> _clearList() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Liste leeren?'),
+        content: Text('${_session.length} Karte(n) werden entfernt.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Abbrechen')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Leeren')),
+        ],
+      ),
+    );
+    if (ok == true && mounted) setState(() => _session.clear());
+  }
+
+  double get _total => _session.fold(0.0, (sum, e) => sum + e.price.amount);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) return;
+    if (state == AppLifecycleState.inactive) {
+      controller.dispose();
+      _controller = null;
+    } else if (state == AppLifecycleState.resumed) {
+      _initCamera();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _flashTimer?.cancel();
+    _controller?.dispose();
+    _recognizer.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildCameraLayer(),
+          const _GuideOverlay(),
+          _buildTopBar(),
+          if (_flash != null) _buildFlash(),
+          _buildBottomControls(),
+          _buildSessionSheet(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraLayer() {
+    if (_fatalError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.videocam_off, size: 48, color: Color(0xFF9AA1AC)),
+              const SizedBox(height: 14),
+              const Text('Kamera konnte nicht gestartet werden',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+              const SizedBox(height: 8),
+              Text(_fatalError!, style: const TextStyle(color: Color(0xFF9AA1AC)), textAlign: TextAlign.center),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: () {
+                  setState(() => _fatalError = null);
+                  _init();
+                },
+                child: const Text('Erneut versuchen'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return const ColoredBox(
+        color: Colors.black,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final preview = controller.value.previewSize!;
+    return FittedBox(
+      fit: BoxFit.cover,
+      child: SizedBox(
+        width: preview.height,
+        height: preview.width,
+        child: CameraPreview(controller),
+      ),
+    );
+  }
+
+  Widget _buildTopBar() {
+    return Positioned(
+      top: 0,
+      left: 0,
+      right: 0,
+      child: Container(
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 12, left: 18, right: 12, bottom: 26),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xA6000000), Colors.transparent],
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(width: 10, height: 10, decoration: const BoxDecoration(color: Color(0xFFE0383D), shape: BoxShape.circle)),
+            const SizedBox(width: 9),
+            const Text('One Piece Scanner', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Spacer(),
+            if (!_cardsLoaded)
+              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+            else
+              Text('${_matcher?.cards.length ?? 0} Karten',
+                  style: const TextStyle(color: Color(0xFF9AA1AC), fontSize: 12)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFlash() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 62,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3DDC84),
+            borderRadius: BorderRadius.circular(30),
+          ),
+          child: Text('✓ $_flash',
+              style: const TextStyle(color: Color(0xFF06240F), fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomControls() {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 150,
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(_scanning ? Icons.sensors : Icons.pause_circle_outline,
+                      size: 16, color: _scanning ? const Color(0xFFFFB703) : const Color(0xFF9AA1AC)),
+                  const SizedBox(width: 7),
+                  Text(_scanning ? 'Scannt automatisch' : 'Pausiert',
+                      style: const TextStyle(fontSize: 12.5)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _toggleScanning,
+              child: Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white24, width: 5),
+                ),
+                child: Icon(_scanning ? Icons.pause : Icons.play_arrow,
+                    color: const Color(0xFFE0383D), size: 30),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSessionSheet() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.13,
+      minChildSize: 0.13,
+      maxChildSize: 0.82,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF15181D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+            boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 20, offset: Offset(0, -6))],
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: EdgeInsets.zero,
+            children: [
+              const SizedBox(height: 8),
+              Center(
+                child: Container(width: 42, height: 5, decoration: BoxDecoration(color: const Color(0xFF3A3F47), borderRadius: BorderRadius.circular(3))),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Row(
+                  children: [
+                    Text.rich(TextSpan(children: [
+                      TextSpan(
+                          text: '${_session.length}',
+                          style: const TextStyle(color: Color(0xFFFFB703), fontWeight: FontWeight.bold, fontSize: 16)),
+                      const TextSpan(text: ' Karten gescannt', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    ])),
+                    const Spacer(),
+                    Text('Gesamt: ${_total.toStringAsFixed(2)} €',
+                        style: const TextStyle(color: Color(0xFF9AA1AC), fontSize: 13)),
+                  ],
+                ),
+              ),
+              if (_session.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(24, 14, 24, 30),
+                  child: Text(
+                    'Noch keine Karte erkannt.\nHalte eine Karte in den Rahmen – sie wird automatisch erfasst.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF9AA1AC), fontSize: 13.5, height: 1.5),
+                  ),
+                )
+              else ...[
+                for (int i = 0; i < _session.length; i++) _buildRow(_session[i], i),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                  child: TextButton(
+                    onPressed: _clearList,
+                    style: TextButton.styleFrom(
+                      backgroundColor: const Color(0xFF2A2F38),
+                      foregroundColor: const Color(0xFF9AA1AC),
+                      minimumSize: const Size.fromHeight(44),
+                    ),
+                    child: const Text('Liste leeren'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRow(ScanEntry entry, int index) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: const Color(0xFF1D2128), borderRadius: BorderRadius.circular(14)),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(7),
+              child: entry.card.img == null
+                  ? const SizedBox(width: 48, height: 67)
+                  : Image.network(
+                      entry.card.img!,
+                      width: 48,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stack) => const SizedBox(width: 48, height: 67),
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.card.name,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+                  const SizedBox(height: 2),
+                  Text('${entry.card.id} · ${entry.card.rarity}',
+                      style: const TextStyle(color: Color(0xFF9AA1AC), fontSize: 12)),
+                  const SizedBox(height: 3),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: entry.how == 'number' ? const Color(0xFF14361F) : const Color(0xFF2A2F38),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      entry.how == 'number' ? 'über Kartennummer' : 'über Name',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: entry.how == 'number' ? const Color(0xFF3DDC84) : const Color(0xFF9AA1AC),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('${entry.price.amount.toStringAsFixed(2)} €',
+                    style: const TextStyle(color: Color(0xFFFFB703), fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text('MOCK', style: TextStyle(color: Color(0xFF9AA1AC), fontSize: 9)),
+              ],
+            ),
+            IconButton(
+              onPressed: () => _removeAt(index),
+              icon: const Icon(Icons.close, size: 18, color: Color(0xFF9AA1AC)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GuideOverlay extends StatelessWidget {
+  const _GuideOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(size: Size.infinite, painter: _GuidePainter()),
+    );
+  }
+}
+
+class _GuidePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final frameWidth = size.width * 0.72;
+    final frameHeight = frameWidth * (88 / 63); // Kartenformat 63x88 mm
+    final left = (size.width - frameWidth) / 2;
+    final top = (size.height - frameHeight) / 2 - size.height * 0.06;
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, top, frameWidth, frameHeight),
+      const Radius.circular(14),
+    );
+
+    final overlay = Path.combine(
+      PathOperation.difference,
+      Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+      Path()..addRRect(rect),
+    );
+    canvas.drawPath(overlay, Paint()..color = const Color(0x8C000000));
+
+    final corner = Paint()
+      ..color = const Color(0xFFFFB703)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+    const len = 28.0;
+    final r = rect.outerRect;
+    // Ecken-Markierungen
+    canvas.drawLine(Offset(r.left, r.top + len), Offset(r.left, r.top), corner);
+    canvas.drawLine(Offset(r.left, r.top), Offset(r.left + len, r.top), corner);
+    canvas.drawLine(Offset(r.right - len, r.top), Offset(r.right, r.top), corner);
+    canvas.drawLine(Offset(r.right, r.top), Offset(r.right, r.top + len), corner);
+    canvas.drawLine(Offset(r.left, r.bottom - len), Offset(r.left, r.bottom), corner);
+    canvas.drawLine(Offset(r.left, r.bottom), Offset(r.left + len, r.bottom), corner);
+    canvas.drawLine(Offset(r.right - len, r.bottom), Offset(r.right, r.bottom), corner);
+    canvas.drawLine(Offset(r.right, r.bottom), Offset(r.right, r.bottom - len), corner);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
