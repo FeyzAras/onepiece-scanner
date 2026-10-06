@@ -20,10 +20,15 @@ class CollectionEntry {
 class StackedCard {
   final OpCard card;
   final List<CollectionEntry> entries;
-  StackedCard(this.card, this.entries);
+
+  /// Tatsaechlich geltender Einzelpreis - entweder der automatisch zugeordnete
+  /// oder der vom Nutzer gewaehlte.
+  final double unitPrice;
+
+  StackedCard(this.card, this.entries, this.unitPrice);
 
   int get count => entries.length;
-  double get totalValue => (card.price?.amount ?? 0) * count;
+  double get totalValue => unitPrice * count;
   String get how => entries.first.how;
 }
 
@@ -46,6 +51,12 @@ class CollectionView extends StatefulWidget {
   final List<OpCard> Function(OpCard card) variantsOf;
   final VoidCallback onManageFolders;
 
+  /// Geltender Einzelpreis einer Karte (automatisch zugeordnet oder vom Nutzer gewaehlt).
+  final double Function(OpCard card) priceOf;
+
+  /// Setzt einen abweichenden Preis, oder loescht die Auswahl bei null.
+  final void Function(OpCard card, double? amount) onChoosePrice;
+
   const CollectionView({
     super.key,
     required this.entries,
@@ -54,6 +65,8 @@ class CollectionView extends StatefulWidget {
     required this.onSwitchArtwork,
     required this.variantsOf,
     required this.onManageFolders,
+    required this.priceOf,
+    required this.onChoosePrice,
   });
 
   @override
@@ -87,7 +100,9 @@ class _CollectionViewState extends State<CollectionView> {
     for (final e in filtered) {
       byCard.putIfAbsent(e.card.id, () => []).add(e);
     }
-    final stacks = byCard.values.map((list) => StackedCard(list.first.card, list)).toList();
+    final stacks = byCard.values
+        .map((list) => StackedCard(list.first.card, list, widget.priceOf(list.first.card)))
+        .toList();
 
     switch (_sort) {
       case SortMode.neueste:
@@ -106,7 +121,7 @@ class _CollectionViewState extends State<CollectionView> {
         });
         break;
       case SortMode.preis:
-        stacks.sort((a, b) => (b.card.price?.amount ?? 0).compareTo(a.card.price?.amount ?? 0));
+        stacks.sort((a, b) => b.unitPrice.compareTo(a.unitPrice));
         break;
     }
     return stacks;
@@ -292,11 +307,127 @@ class _CollectionViewState extends State<CollectionView> {
               maxLines: 1, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600)),
           Text(stack.card.id, style: const TextStyle(fontSize: 10, color: kDim)),
-          Text(
-            stack.card.price == null ? '–' : formatEuro(stack.totalValue),
-            style: const TextStyle(fontSize: 11, color: kGold, fontWeight: FontWeight.bold),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                stack.card.price == null ? '–' : formatEuro(stack.totalValue),
+                style: const TextStyle(fontSize: 11, color: kGold, fontWeight: FontWeight.bold),
+              ),
+              // Hinweiszeichen, wenn die Zuordnung zur Druckvariante unsicher ist
+              if (stack.card.price?.confidence == PriceConfidence.unsicher)
+                const Padding(
+                  padding: EdgeInsets.only(left: 3),
+                  child: Icon(Icons.help_outline, size: 11, color: kDim),
+                ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Erklaert, worauf sich der Preis bezieht, zeigt die Spanne aller Cardmarket-Versionen
+  /// dieser Kartennummer und laesst eine andere waehlen.
+  ///
+  /// Hintergrund: Cardmarket fuehrt pro Nummer mehrere Druckvarianten - bei OP01-001 acht,
+  /// von 1,87 EUR bis 610 EUR. Die automatische Zuordnung kann danebenliegen, deshalb
+  /// bleibt die Entscheidung einsehbar und korrigierbar.
+  Widget _priceSection(BuildContext ctx, StackedCard stack) {
+    final card = stack.card;
+    final price = card.price!;
+    final options = card.priceOptions;
+    final chosenByUser = (stack.unitPrice - price.amount).abs() > 0.004;
+
+    final confidenceColor = switch (price.confidence) {
+      PriceConfidence.eindeutig => kOk,
+      PriceConfidence.paar => kGold,
+      PriceConfidence.unsicher => const Color(0xFFFF8A8A),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: kRow, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  price.confidence == PriceConfidence.eindeutig ? Icons.verified_outlined : Icons.help_outline,
+                  size: 15,
+                  color: confidenceColor,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    chosenByUser ? 'von dir ausgewählt' : price.confidence.label,
+                    style: TextStyle(fontSize: 12, color: chosenByUser ? kOk : confidenceColor),
+                  ),
+                ),
+                if (chosenByUser)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      widget.onChoosePrice(card, null);
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('zurücksetzen', style: TextStyle(fontSize: 11.5, color: kDim)),
+                  ),
+              ],
+            ),
+            if (options.length > 1) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Cardmarket führt ${options.length} Versionen dieser Nummer: '
+                '${formatEuro(options.first)} – ${formatEuro(options.last)}',
+                style: const TextStyle(fontSize: 11.5, color: kDim, height: 1.4),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final option in options)
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        widget.onChoosePrice(card, option);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: (stack.unitPrice - option).abs() < 0.004 ? kGold : kChip,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          formatEuro(option),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: (stack.unitPrice - option).abs() < 0.004
+                                ? const Color(0xFF241A00)
+                                : kDim,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Stimmt der Wert nicht, tippe die passende Version an – die Auswahl bleibt gespeichert.',
+                style: TextStyle(fontSize: 10.5, color: kDim, height: 1.4),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -358,7 +489,7 @@ class _CollectionViewState extends State<CollectionView> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Text(price == null ? 'kein Preis hinterlegt' : formatEuro(price.amount),
+                        Text(price == null ? 'kein Preis hinterlegt' : formatEuro(stack.unitPrice),
                             style: const TextStyle(color: kGold, fontWeight: FontWeight.bold, fontSize: 20)),
                         if (price != null)
                           Text('Cardmarket ${price.basisLabel} · Stand ${price.asOf}',
@@ -371,6 +502,7 @@ class _CollectionViewState extends State<CollectionView> {
                   ),
                 ],
               ),
+              if (price != null) _priceSection(ctx, stack),
               if (card.effect.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Text(card.effect, style: const TextStyle(color: Color(0xFFD7DBE0), fontSize: 12, height: 1.45)),

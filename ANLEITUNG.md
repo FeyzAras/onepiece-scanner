@@ -118,13 +118,30 @@ Angezeigt wird Cardmarkets **Trendpreis**, der Stand steht unter dem Betrag.
 Sie stammen aus den Export-Dateien, die Cardmarket seit Juli 2025 selbst täglich veröffentlicht und
 ausdrücklich zur Nutzung in eigenen Anwendungen freigibt — kein API-Zugang, kein Scraping.
 
-**Wichtig:** Die Preise sind in der App **fest eingebaut**, nicht live. Sie entsprechen dem Stand,
-der beim Bauen der App aktuell war. Für neuere Preise muss eine neue Version gebaut werden —
-automatische Aktualisierung ist noch nicht eingebaut.
+### Welche Version wird bepreist?
 
-**Eine bekannte Ungenauigkeit:** Alternative Artworks („Alt Art") bekommen derzeit den Preis der
-normalen Version, obwohl sie real meist deutlich teurer sind. Cardmarket führt beide unter demselben
-Namen, eine saubere Trennung braucht noch Zusatzarbeit.
+Das ist der kniffligste Teil. Cardmarket führt **pro Kartennummer mehrere Produkte**: Originaldruck,
+Alt-Art, Nachdrucke in späteren Sets, Promos, Turnierpreise. Im Schnitt 4,2 Stück, bei manchen über
+20 — und die Preise liegen weit auseinander. Bei OP01-001 zwischen **1,87 € und 610 €**.
+
+Die App ordnet automatisch zu: Sie erkennt, welche Cardmarket-Edition dem Originalset der Karte
+entspricht, und unterscheidet darin normales Artwork von Alt-Art. In den Kartendetails steht,
+wie sicher das war:
+
+| Angabe | Bedeutung |
+| --- | --- |
+| ✅ **eindeutig zugeordnet** | Es gibt nur eine Version — der Preis stimmt sicher |
+| ⚠️ **normal/Alt-Art unterschieden** | Zwei Versionen; zugeordnet über die Annahme, dass die Alt-Art die teurere ist |
+| ❓ **Zuordnung unsicher** | Mehr als zwei Versionen oder keine eindeutige Originaledition |
+
+**Stimmt der Preis nicht, kannst du ihn selbst wählen.** In den Kartendetails stehen alle
+Cardmarket-Versionen dieser Nummer als antippbare Beträge. Deine Wahl wird dauerhaft gespeichert
+und mit „von dir ausgewählt" markiert; über „zurücksetzen" geht es wieder zur Automatik.
+
+In der Übersicht zeigt ein kleines **❓** neben dem Betrag an, dass die Zuordnung unsicher ist.
+
+**Noch zu beachten:** Die Preise sind in der App fest eingebaut, nicht live — sie entsprechen dem
+Stand beim Bauen der App (steht unter jedem Betrag).
 
 ---
 

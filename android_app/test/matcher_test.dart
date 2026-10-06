@@ -153,4 +153,51 @@ Supernovas/Straw Hat Crew oo01.001 um''';
       expect(withPrice / matcher.cards.length, greaterThan(0.95));
     });
   });
+
+  group('Preis trifft die richtige Druckvariante', () {
+    // Cardmarket fuehrt pro Kartennummer mehrere Produkte. Vorher bekamen normales
+    // Artwork und Alt-Art denselben (zu niedrigen) Preis - das war der Kernfehler.
+    test('Alt-Art kostet mehr als die Normalversion, wenn sie teurer ist', () {
+      final normal = matcher.byId('OP01-001')!;
+      final alt = matcher.byId('OP01-001-ALT')!;
+      expect(normal.price!.amount, lessThan(alt.price!.amount));
+      expect(normal.price!.amount, closeTo(1.87, 0.01));
+      expect(alt.price!.amount, greaterThan(100));
+    });
+
+    test('beide Varianten kennen die Spanne aller Cardmarket-Versionen', () {
+      final alt = matcher.byId('OP01-001-ALT')!;
+      expect(alt.hasPriceChoice, isTrue);
+      expect(alt.priceOptions.length, greaterThan(2));
+      // aufsteigend sortiert
+      for (var i = 1; i < alt.priceOptions.length; i++) {
+        expect(alt.priceOptions[i], greaterThanOrEqualTo(alt.priceOptions[i - 1]));
+      }
+      expect(alt.priceOptions, contains(alt.price!.amount));
+    });
+
+    test('der zugeordnete Preis steht immer in der Optionsliste', () {
+      var checked = 0;
+      for (final card in matcher.cards.where((c) => c.hasPriceChoice).take(400)) {
+        expect(card.priceOptions.any((o) => (o - card.price!.amount).abs() < 0.005), isTrue,
+            reason: '${card.id}: ${card.price!.amount} fehlt in ${card.priceOptions}');
+        checked++;
+      }
+      expect(checked, greaterThan(300));
+    });
+
+    test('Zuordnungssicherheit ist gesetzt und bei den meisten Karten gut', () {
+      final withPrice = matcher.cards.where((c) => c.price != null).toList();
+      final sicher = withPrice
+          .where((c) => c.price!.confidence != PriceConfidence.unsicher)
+          .length;
+      expect(sicher / withPrice.length, greaterThan(0.8),
+          reason: 'mindestens 80 % sollten eindeutig oder als Paar zugeordnet sein');
+    });
+
+    test('bei Karten mit nur einer Version gibt es nichts zu waehlen', () {
+      final einfach = matcher.cards.firstWhere((c) => c.price != null && !c.hasPriceChoice);
+      expect(einfach.priceOptions, isEmpty);
+    });
+  });
 }

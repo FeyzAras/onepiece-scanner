@@ -53,7 +53,17 @@ class CollectionState {
   final String activeFolderId;
   final List<StoredScan> scans;
 
-  const CollectionState({required this.folders, required this.activeFolderId, required this.scans});
+  /// Vom Nutzer selbst gewaehlte Preise, nach Karten-ID. Noetig, weil Cardmarket pro
+  /// Kartennummer mehrere Druckvarianten mit teils sehr verschiedenen Preisen fuehrt und
+  /// die automatische Zuordnung danebenliegen kann.
+  final Map<String, double> priceOverrides;
+
+  const CollectionState({
+    required this.folders,
+    required this.activeFolderId,
+    required this.scans,
+    this.priceOverrides = const {},
+  });
 }
 
 /// Speichert Ordner und gescannte Karten dauerhaft auf dem Geraet.
@@ -80,10 +90,16 @@ class CollectionStore {
             .map(StoredScan.fromJson)
             .whereType<StoredScan>()
             .toList();
+        final overrides = <String, double>{};
+        (map['prices'] as Map<String, dynamic>? ?? {}).forEach((key, value) {
+          final amount = (value as num?)?.toDouble();
+          if (amount != null) overrides[key] = amount;
+        });
         return CollectionState(
           folders: folders.isEmpty ? _defaultFolders() : folders,
           activeFolderId: (map['active'] as String?) ?? defaultFolderId,
           scans: scans,
+          priceOverrides: overrides,
         );
       } catch (_) {
         // beschaedigte Daten: lieber leer starten als abstuerzen
@@ -122,6 +138,7 @@ class CollectionStore {
         'folders': state.folders.map((f) => f.toJson()).toList(),
         'active': state.activeFolderId,
         'scans': state.scans.map((s) => s.toJson()).toList(),
+        'prices': state.priceOverrides,
       }),
     );
   }

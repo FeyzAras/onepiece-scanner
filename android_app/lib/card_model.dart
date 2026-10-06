@@ -1,3 +1,32 @@
+/// Wie sicher der Preis der tatsaechlich vorliegenden Druckvariante zugeordnet ist.
+///
+/// Cardmarket fuehrt pro Kartennummer mehrere Produkte (Originaldruck, Alt-Art,
+/// Nachdrucke, Promos) - teils mit sehr unterschiedlichen Preisen. Die Zuordnung
+/// erfolgt in der Datenaufbereitung, siehe scripts/import-cardmarket-prices.js.
+enum PriceConfidence {
+  /// In der Originaledition des Sets gibt es genau ein Produkt zu dieser Nummer.
+  eindeutig,
+
+  /// Zwei Produkte (normales Artwork und Alt-Art). Zugeordnet ueber die Annahme,
+  /// dass die Alt-Art die teurere ist.
+  paar,
+
+  /// Mehr als zwei Produkte oder keine eindeutige Originaledition - Angabe kann danebenliegen.
+  unsicher;
+
+  static PriceConfidence parse(String? raw) => switch (raw) {
+        'eindeutig' => PriceConfidence.eindeutig,
+        'paar' => PriceConfidence.paar,
+        _ => PriceConfidence.unsicher,
+      };
+
+  String get label => switch (this) {
+        PriceConfidence.eindeutig => 'eindeutig zugeordnet',
+        PriceConfidence.paar => 'normal/Alt-Art unterschieden',
+        PriceConfidence.unsicher => 'Zuordnung unsicher',
+      };
+}
+
 /// Preis einer Karte. Quelle sind die taeglich von Cardmarket selbst veroeffentlichten
 /// Export-Dateien (siehe scripts/fetch-cardmarket.js). `basis` sagt, welcher Wert genommen
 /// wurde: 'trend' ist Cardmarkets Trendpreis, sonst Durchschnitt bzw. niedrigster Preis.
@@ -7,6 +36,7 @@ class CardPrice {
   final String basis;
   final String source;
   final String asOf;
+  final PriceConfidence confidence;
 
   const CardPrice({
     required this.amount,
@@ -14,6 +44,7 @@ class CardPrice {
     required this.basis,
     required this.source,
     required this.asOf,
+    this.confidence = PriceConfidence.unsicher,
   });
 
   bool get isReal => source == 'cardmarket';
@@ -27,6 +58,15 @@ class CardPrice {
         _ => basis,
       };
 
+  CardPrice copyWithAmount(double value) => CardPrice(
+        amount: value,
+        currency: currency,
+        basis: basis,
+        source: source,
+        asOf: asOf,
+        confidence: confidence,
+      );
+
   static CardPrice? fromJson(Map<String, dynamic>? j) {
     if (j == null) return null;
     final amount = (j['amount'] as num?)?.toDouble();
@@ -37,6 +77,7 @@ class CardPrice {
       basis: (j['basis'] ?? 'trend') as String,
       source: (j['source'] ?? 'cardmarket') as String,
       asOf: (j['asOf'] ?? '') as String,
+      confidence: PriceConfidence.parse(j['confidence'] as String?),
     );
   }
 }
@@ -58,6 +99,13 @@ class OpCard {
   /// Bild-Fingerabdruck (dHash). Nur gesetzt, wenn es zur Kartennummer mehrere
   /// Artworks gibt - nur dort wird er zum Unterscheiden gebraucht.
   final String? imgHash;
+
+  /// Alle Cardmarket-Preise zu dieser Kartennummer, aufsteigend. Dient der App dazu,
+  /// die Spanne anzuzeigen und den Nutzer umschalten zu lassen, falls die automatische
+  /// Zuordnung danebenliegt. Leer, wenn es nur eine Version gibt.
+  final List<double> priceOptions;
+
+  bool get hasPriceChoice => priceOptions.length > 1;
 
   /// Welches Sammelkartenspiel. Aktuell nur One Piece, aber die Sammlung
   /// gruppiert bereits danach, damit weitere Spiele spaeter dazupassen.
@@ -83,6 +131,7 @@ class OpCard {
     this.img,
     this.price,
     this.imgHash,
+    this.priceOptions = const [],
   });
 
   factory OpCard.fromJson(Map<String, dynamic> j) => OpCard(
@@ -99,5 +148,7 @@ class OpCard {
         img: j['img'] as String?,
         price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),
         imgHash: j['imgHash'] as String?,
+        priceOptions:
+            (j['priceOptions'] as List?)?.map((e) => (e as num).toDouble()).toList() ?? const [],
       );
 }

@@ -50,7 +50,12 @@ identischer Nummer und identischem Namen. Welche vor der Kamera liegt, entscheid
 Bild-Fingerabdruck: für alle 2.166 betroffenen Karten vorab berechnet, zur Laufzeit mit dem
 Kamerabild verglichen.
 
-**Echte Cardmarket-Preise** — 3.865 von 3.868 Karten (99,9 %) mit Trendpreis.
+**Echte Cardmarket-Preise** — 3.865 von 3.868 Karten (99,9 %) mit Trendpreis, und zwar für die
+**richtige Druckvariante**. Cardmarket führt pro Kartennummer im Schnitt 4,2 Produkte (Originaldruck,
+Alt-Art, Nachdrucke, Promos), deren Preise weit auseinanderliegen — bei OP01-001 zwischen 1,87 € und
+610 €. Die Zuordnung erkennt die Originaledition des Sets und unterscheidet darin normales Artwork
+von Alt-Art. Wie sicher das war, steht in den Kartendetails; dort lässt sich auch jede andere
+Version antippen, falls die Automatik danebenliegt.
 
 **Sammlung** — Ordner, Dubletten-Zähler (×3), Suche über Name/Nummer/Set, Sortierung nach zuletzt
 gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Bleibt dauerhaft
@@ -124,8 +129,16 @@ oder onepiecetopdecks.com. One Piece und alle Kartenbilder gehören ihren jeweil
 
 - **Preise sind nicht live** — sie entsprechen dem Stand beim Bauen der App. Der Stand steht in
   der App unter jedem Betrag.
-- **Alt-Art-Preise** — alternative Artworks bekommen derzeit den Preis der Normalversion, obwohl
-  sie real meist teurer sind. Cardmarket führt beide unter demselben Namen.
+- **Druckvarianten-Zuordnung beruht auf zwei Annahmen.** Cardmarket liefert keine Editionsnamen,
+  nur Nummern; welche Edition das Originalset ist, wird aus den enthaltenen Kartennummern
+  abgeleitet (die zuerst angelegte „reine" Edition eines Sets). Und wo zwei Produkte in einer
+  Edition stehen, gilt die teurere als Alt-Art — Cardmarket benennt sie nicht unterschiedlich.
+  Rund 80 % der Karten sind dadurch eindeutig oder als Paar zugeordnet, der Rest ist in der App
+  als unsicher gekennzeichnet und manuell korrigierbar.
+- **Keine Länder- oder Sprachfilterung.** Die Export-Dateien enthalten nur europaweite Aggregate
+  (Trend, Durchschnitt, Tiefstpreis). Verkäuferland, Kartensprache und Zustand gibt es bei
+  Cardmarket nur auf Angebotsebene, und dorthin führt nur die API — die ist für neue Anträge
+  geschlossen.
 - **Artwork-Erkennung unter Kamerabedingungen ungetestet** — die Logik ist an 150 echten
   Alt-Art-Karten geprüft, aber mit Katalogbildern, nicht mit Fotos bei Zimmerlicht.
 - Die Web-Version hat die neuen Tabs (Sammlung, Decks) nicht; sie ist die ältere, einfachere Fassung.

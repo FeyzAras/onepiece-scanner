@@ -52,6 +52,10 @@ class _HomePageState extends State<HomePage> {
   List<ScanFolder> _folders = const [];
   String _activeFolderId = CollectionStore.defaultFolderId;
 
+  /// Vom Nutzer gewaehlte Preise je Karten-ID, wenn die automatische Zuordnung
+  /// zur Druckvariante danebenlag.
+  final Map<String, double> _priceOverrides = {};
+
   DeckData? _decks;
   bool _decksLoading = true;
 
@@ -80,6 +84,9 @@ class _HomePageState extends State<HomePage> {
       _matcher = matcher;
       _folders = state.folders;
       _activeFolderId = state.activeFolderId;
+      _priceOverrides
+        ..clear()
+        ..addAll(state.priceOverrides);
       _collection
         ..clear()
         ..addAll(restored);
@@ -105,7 +112,29 @@ class _HomePageState extends State<HomePage> {
         folders: _folders,
         activeFolderId: _activeFolderId,
         scans: _collection.map((e) => e.toStored()).toList(),
+        priceOverrides: _priceOverrides,
       ));
+
+  /// Geltender Einzelpreis: die vom Nutzer gewaehlte Version, sonst die automatisch zugeordnete.
+  double _priceOf(OpCard card) => _priceOverrides[card.id] ?? card.price?.amount ?? 0;
+
+  void _choosePrice(OpCard card, double? amount) {
+    setState(() {
+      if (amount == null) {
+        _priceOverrides.remove(card.id);
+      } else {
+        _priceOverrides[card.id] = amount;
+      }
+    });
+    _persist();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(amount == null
+          ? 'Preis zurückgesetzt: ${card.name}'
+          : 'Preis gesetzt: ${amount.toStringAsFixed(2)} € für ${card.name}'),
+      duration: const Duration(seconds: 2),
+    ));
+  }
 
   ScanFolder get _activeFolder => _folders.firstWhere(
         (f) => f.id == _activeFolderId,
@@ -299,6 +328,8 @@ class _HomePageState extends State<HomePage> {
             onSwitchArtwork: _switchArtwork,
             variantsOf: (card) => _matcher?.variantsOf(card) ?? [card],
             onManageFolders: _manageFolders,
+            priceOf: _priceOf,
+            onChoosePrice: _choosePrice,
           ),
           DecksView(
             data: _decks,
