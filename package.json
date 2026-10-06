@@ -1,12 +1,18 @@
 {
   "name": "onepiece-scanner",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
-  "description": "One Piece TCG Kartenscanner - installierbare PWA. Kamera drauf halten, Karte erkennen, Sammlung/Preis anzeigen.",
+  "description": "One Piece TCG Kartenscanner - Kamera drauf halten, Karte wird automatisch erkannt, mit Cardmarket-Preis und Sammlungsverwaltung.",
   "type": "commonjs",
   "scripts": {
-    "build-db": "node server/build-db.js && node scripts/sync-cards.js",
-    "dev": "node server/dev-server.js"
+    "data:catalog": "node scripts/build-db.js",
+    "data:prices": "node scripts/fetch-cardmarket.js && node scripts/import-cardmarket-prices.js",
+    "data:hashes": "node scripts/build-image-hashes.js",
+    "data:decks": "node scripts/fetch-decks.js",
+    "data:sync": "node scripts/sync-cards.js",
+    "data:all": "npm run data:catalog && npm run data:prices && npm run data:hashes && npm run data:decks && npm run data:sync",
+    "test": "node scripts/verify-match.mjs",
+    "dev": "node scripts/dev-server.js"
   },
   "dependencies": {
     "express": "^4.19.2",

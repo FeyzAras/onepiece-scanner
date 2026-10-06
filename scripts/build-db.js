@@ -25,20 +25,49 @@ function normalize(card) {
   };
 }
 
+/// Preise und Bild-Fingerabdruecke stammen aus eigenen Schritten (import-cardmarket-prices.js,
+/// build-image-hashes.js). Beim Neuaufbau des Katalogs werden sie uebernommen, damit ein
+/// erneuter Lauf diese Arbeit nicht zunichtemacht.
+function carryOver(outPath) {
+  if (!fs.existsSync(outPath)) return new Map();
+  try {
+    const previous = JSON.parse(fs.readFileSync(outPath, "utf8").replace(/^﻿/, ""));
+    return new Map(previous.map((c) => [c.id, { price: c.price, imgHash: c.imgHash }]));
+  } catch {
+    return new Map();
+  }
+}
+
 function main() {
+  const outPath = path.join(__dirname, "..", "data", "cards.normalized.json");
+  const previous = carryOver(outPath);
+
   const list = Array.isArray(raw) ? raw : raw.all || [];
   const seen = new Set();
   const normalized = [];
+  let keptPrices = 0;
+  let keptHashes = 0;
   for (const card of list) {
     const entry = normalize(card);
     if (!entry.id || !entry.name) continue;
     if (seen.has(entry.id)) continue;
     seen.add(entry.id);
+
+    const old = previous.get(entry.id);
+    if (old?.price) {
+      entry.price = old.price;
+      keptPrices++;
+    }
+    if (old?.imgHash) {
+      entry.imgHash = old.imgHash;
+      keptHashes++;
+    }
     normalized.push(entry);
   }
-  const outPath = path.join(__dirname, "..", "data", "cards.normalized.json");
+
   fs.writeFileSync(outPath, JSON.stringify(normalized, null, 2), "utf8");
   console.log(`OK: ${normalized.length} Karten aus ${list.length} Rohdatensaetzen -> ${outPath}`);
+  console.log(`    uebernommen: ${keptPrices} Preise, ${keptHashes} Bild-Fingerabdruecke`);
 }
 
 main();

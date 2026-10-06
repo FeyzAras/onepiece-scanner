@@ -1,21 +1,19 @@
 # Anleitung — One Piece Scanner
 
-> **Hinweis zu den Abbildungen:** Die Bilder unten sind **maßstabsgetreue Nachbildungen aus dem
-> UI-Code**, keine echten Screenshots. In der Entwicklungsumgebung war kein Android-Gerät und kein
-> Emulator verfügbar. Sobald die App auf dem Handy läuft, werden sie durch echte Screenshots ersetzt.
-
----
-
 ## 1. App installieren (Android)
 
-1. Auf dem Handy diesen Link öffnen — das ist der direkte Download:
-   **https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.1.0/onepiece-scanner.apk**
-   (Übersicht aller Versionen: https://github.com/FeyzAras/onepiece-scanner/releases)
-2. Die Datei **`onepiece-scanner.apk`** (76 MB) wird heruntergeladen.
+1. Auf dem Handy die **Releases-Seite** öffnen — dort steht immer die neueste Version:
+   **https://github.com/FeyzAras/onepiece-scanner/releases/latest**
+2. Unter **Assets** die Datei **`onepiece-scanner-arm64.apk`** antippen. Chrome fragt nach, ob die
+   Datei heruntergeladen werden darf → **bestätigen**.
 3. Die heruntergeladene Datei öffnen (Benachrichtigung antippen oder in „Downloads").
 4. Android fragt: *„Aus dieser Quelle dürfen keine unbekannten Apps installiert werden"* →
    **Einstellungen** antippen → **„Aus dieser Quelle zulassen"** aktivieren → zurück → **Installieren**.
-5. Beim ersten Start fragt die App nach der **Kamera-Berechtigung** → **Zulassen**.
+5. Play Protect warnt eventuell vor einem unbekannten Entwickler → **Trotzdem installieren**.
+6. Beim ersten Start fragt die App nach der **Kamera-Berechtigung** → **Zulassen**.
+
+> `arm64` ist die richtige Variante für aktuelle Handys, auch für das Samsung S24. Eine neue
+> Version lässt sich einfach über die alte installieren — die Sammlung bleibt erhalten.
 
 > Die App ist mit einem Entwickler-Schlüssel signiert, nicht über den Play Store verteilt. Deshalb
 > die Rückfrage von Android — das ist normal bei selbst gebauten Apps.
@@ -26,8 +24,6 @@ wird nur benutzt, um die Kartenbilder in der Liste nachzuladen.
 ---
 
 ## 2. Scannen
-
-<img src="docs/images/ui-scan.svg" width="300" alt="Scan-Ansicht: Kamerabild mit Kartenrahmen, Statusanzeige und eingeklappter Liste">
 
 So läuft es ab:
 
@@ -74,8 +70,6 @@ anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsa
 ---
 
 ## 3. Die Liste
-
-<img src="docs/images/ui-liste.svg" width="300" alt="Liste der gescannten Karten mit Namen, Set-Nummer, Erkennungsart und Preis">
 
 Die App hat unten drei Tabs: **Scannen**, **Sammlung** und **Decks**.
 

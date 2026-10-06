@@ -1,137 +1,131 @@
 # One Piece TCG Scanner
 
-Kamera auf eine One-Piece-Karte halten — die Karte wird **automatisch** erkannt und mit Preis in eine
-Liste eingetragen. Kein Knopfdruck pro Karte.
-
-👉 **[Anleitung: Installieren und benutzen](ANLEITUNG.md)**
-
-Das Projekt enthält zwei Varianten:
-
-| Variante | Ordner | Zustand |
-| --- | --- | --- |
-| **Android-App** (Flutter, native) | `android_app/` | Hauptvariante. APK zum Installieren auf dem Handy. |
-| Web-App (PWA) | `docs/` | Läuft im Browser, installierbar über "Zum Startbildschirm hinzufügen". |
-
-Projektkontext: `2.7.Pythagoras/Projekte/P-001_TCG_Marktplatz_DE/02_Konzeption_Kartenscanner_OnePiece.md`
-im Obsidian-Vault.
+Kamera auf eine One-Piece-Karte halten — sie wird **automatisch erkannt** und landet mit echtem
+Cardmarket-Preis in deiner Sammlung. Kein Knopfdruck pro Karte.
 
 ---
 
-## Android-App
+## 📲 App herunterladen
 
-**Technik:** Flutter + `camera` (Live-Bildstrom) + Google **ML Kit Text Recognition** (On-Device-OCR,
-funktioniert offline, keine Cloud). Kartenkatalog liegt als Asset in der App.
+**[→ Neueste Version für Android herunterladen (APK)](https://github.com/FeyzAras/onepiece-scanner/releases/latest)**
 
-**So funktioniert das Erkennen:**
-1. Die Kamera liefert laufend Bilder (ca. alle 350 ms wird eins ausgewertet).
-2. ML Kit liest den Text auf der Karte.
-3. **Die Kartennummer ist Pflicht** (z. B. `OP01-001`). Typische OCR-Fehler werden ausgeglichen
-   (`oo01.001` → `OP01-001`); akzeptiert wird nur, was einer real existierenden Karten-ID
-   entspricht. Der Kartenname allein reicht **nicht** — Namen anderer Karten stehen im Effekttext
-   und führten früher zu Fehltreffern.
-4. **Artwork-Entscheidung:** Zu 1.083 Nummern gibt es zwei Karten (normal + Alt-Art). Welche
-   gemeint ist, entscheidet ein Bild-Fingerabdruck (dHash): für alle 2.166 betroffenen Karten
-   vorab berechnet, zur Laufzeit mit dem Kamerabild verglichen.
-5. **Mehrfachbestätigung:** Dieselbe Nummer muss zweimal gelesen werden, bevor die Karte in die
-   Sammlung wandert. Dieselbe Karte wird innerhalb von 5 Sekunden nicht doppelt eingetragen.
+Den Link **auf dem Handy** öffnen und die Datei `onepiece-scanner-arm64.apk` antippen.
 
-**Aufbau:** drei Tabs — Scannen, Sammlung (Ordner, Dubletten-Zähler, Suche, Sortierung) und
-Decks (Turnierdecks mit Abgleich gegen die eigene Sammlung).
+<details>
+<summary><b>Installation Schritt für Schritt</b> (aufklappen)</summary>
 
-**Datenpflege-Skripte:**
-```
-node scripts/fetch-cardmarket.js          # Cardmarket-Export laden
-node scripts/import-cardmarket-prices.js  # Preise einspielen
-node scripts/build-image-hashes.js        # Bild-Fingerabdruecke berechnen (laedt ~2200 Bilder)
-node scripts/fetch-decks.js               # Turnierdecks holen
-npm run build-db                          # Kartendaten neu bauen und verteilen
-```
+1. Link oben auf dem Handy öffnen → unter **Assets** auf `onepiece-scanner-arm64.apk` tippen
+2. Chrome fragt, ob die Datei heruntergeladen werden darf → **Herunterladen** bestätigen
+3. Heruntergeladene Datei öffnen (Benachrichtigung antippen oder in „Downloads")
+4. Android meldet *„Aus dieser Quelle dürfen keine unbekannten Apps installiert werden"* →
+   **Einstellungen** → **„Aus dieser Quelle zulassen"** → zurück → **Installieren**
+5. Play Protect warnt eventuell vor unbekanntem Entwickler → **Trotzdem installieren**
+6. Beim ersten Start: **Kamera-Berechtigung zulassen**
 
-**Bauen:**
-```
+Schritt 4 und 5 sind normal bei Apps, die nicht über den Play Store kommen.
+
+Es gibt drei APK-Varianten. Für aktuelle Handys (auch Samsung S24) ist **`arm64`** die richtige;
+`armeabi-v7a` ist für ältere Geräte, `x86_64` für Emulatoren.
+</details>
+
+**Ausführliche Bedienungsanleitung: [ANLEITUNG.md](ANLEITUNG.md)**
+
+Es gibt die App auch als **Web-Version** zum Ausprobieren ohne Installation:
+**[feyzaras.github.io/onepiece-scanner](https://feyzaras.github.io/onepiece-scanner/)** —
+funktioniert in jedem Browser, hat aber eine langsamere Texterkennung und nicht alle Funktionen.
+
+---
+
+## Was die App kann
+
+**Scannen ohne Knopfdruck** — Kamera läuft dauerhaft, Karte in den Rahmen halten genügt.
+
+**Erkennung über die Kartennummer** statt über den Namen. Der Name reicht nicht: Viele Karten
+heißen gleich, und Namen anderer Karten stehen im Effekttext — beim Scannen von „Snake Dance"
+wurden früher reihum „Gina" und „Portgas.D.Ace" erkannt. Die aufgedruckte Nummer (`OP07-055`) ist
+dagegen eindeutig. Dieselbe Nummer muss zweimal gelesen werden, bevor die Karte übernommen wird.
+
+**Richtiges Artwork** — Zu 1.083 Kartennummern gibt es zwei Versionen: normal und Alt-Art, bei
+identischer Nummer und identischem Namen. Welche vor der Kamera liegt, entscheidet ein
+Bild-Fingerabdruck: für alle 2.166 betroffenen Karten vorab berechnet, zur Laufzeit mit dem
+Kamerabild verglichen.
+
+**Echte Cardmarket-Preise** — 3.865 von 3.868 Karten (99,9 %) mit Trendpreis.
+
+**Sammlung** — Ordner, Dubletten-Zähler (×3), Suche über Name/Nummer/Set, Sortierung nach zuletzt
+gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Bleibt dauerhaft
+gespeichert.
+
+**Decks** — Aktuelle Turnierdecks, dazu für jedes ein Balken: wie viele Karten davon du besitzt.
+In der Deckliste steht je Karte „2/4" — was du hast und was das Deck braucht.
+
+---
+
+## Aufbau des Projekts
+
+| Ordner | Inhalt |
+| --- | --- |
+| `android_app/` | Die Android-App (Flutter). Hauptvariante. |
+| `docs/` | Die Web-Version (PWA), wird von GitHub Pages ausgeliefert |
+| `scripts/` | Datenpflege: Kartenkatalog, Preise, Bild-Fingerabdrücke, Decklisten |
+| `data/` | Zwischenstände der Datenpipeline (nicht versioniert) |
+| `.github/workflows/` | Tägliche Aktualisierung der Decklisten |
+
+### Technik
+
+Flutter + `camera` (Live-Bildstrom) + **Google ML Kit Text Recognition** — Texterkennung läuft
+direkt auf dem Gerät, ohne Cloud und ohne Internetverbindung. Kartenkatalog und Preise liegen als
+Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwischengespeichert).
+
+---
+
+## Selbst bauen
+
+```bash
 cd android_app
 flutter pub get
-flutter test          # Erkennungslogik gegen den echten Katalog pruefen
-flutter build apk --release
-# Ergebnis: build/app/outputs/flutter-apk/app-release.apk
+flutter test                        # 31 Tests der Erkennungslogik
+flutter build apk --release --split-per-abi
+# Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 
-**Installieren:** APK auf das Handy laden, öffnen, "Installation aus unbekannten Quellen" für den
-Browser/Dateimanager erlauben. Die APK ist mit dem Flutter-Debug-Schlüssel signiert — für den
-Eigengebrauch völlig in Ordnung, für den Play Store bräuchte es einen eigenen Signaturschlüssel.
+Die APK wird mit dem Flutter-Debug-Schlüssel signiert — ausreichend zum Selbstinstallieren, für
+den Play Store bräuchte es einen eigenen Signaturschlüssel.
 
----
+### Daten aktualisieren
 
-## Web-App (PWA)
-
-```
+```bash
 npm install
-npm run build-db   # Kartendaten neu aufbauen + nach docs/data/cards.json kopieren
-npm run dev        # Vorschau unter http://localhost:3000
+npm run data:all     # Katalog, Preise, Bild-Fingerabdrücke, Decks, verteilen
+npm test             # Erkennungslogik und Preise prüfen
 ```
 
-Komplett client-seitig, kein Server nötig. OCR läuft per `tesseract.js` im Browser (langsamer als
-ML Kit, ca. 2–4 s pro Versuch). Liegt in `docs/`, damit GitHub Pages es direkt ausliefern kann.
+Einzelne Schritte: `data:catalog`, `data:prices`, `data:hashes`, `data:decks`, `data:sync`.
+Ein erneuter `data:catalog`-Lauf übernimmt vorhandene Preise und Fingerabdrücke, statt sie zu
+verwerfen.
 
 ---
 
-## Was ist echt, was ist Platzhalter?
+## Datenquellen
 
-| Teil | Status |
+| Was | Quelle |
 | --- | --- |
-| Dauer-Scan, Erkennung, Sammlung mit Ordnern, Dubletten, Suche, Sortierung | **echt**, gebaut und auf Logik-Ebene getestet (31 Tests) |
-| Artwork-Unterscheidung über Bild-Fingerabdruck | **echt** — getestet an 150 echten Alt-Art-Karten; unter realen Kamerabedingungen aber ungeprüft |
-| Deck-Tab mit Turnierdecks und Sammlungsabgleich | **echt** — 336 Decks, Quelle onepiecetopdecks.com |
-| OCR | **echt** — ML Kit (App) bzw. tesseract.js (Web) |
-| Kartennummer- und Namensabgleich | **echt**, durch automatische Tests abgedeckt (`flutter test`, `node scripts/verify-match.mjs`) |
-| Kartenkatalog | **echt, aktuell** — npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json), Stand 09/2026, 3.868 Karten, OP01–OP17 + EB + Promos + ST01–36 |
-| **Preise** | **echte Cardmarket-Preise**, 3.865 von 3.868 Karten (99,9 %) — siehe unten |
+| Kartenkatalog | [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json) (npm) |
+| Kartenbilder | [en.onepiece-cardgame.com](https://en.onepiece-cardgame.com) (offizielle Bandai-Seite) |
+| Preise | [Cardmarket](https://www.cardmarket.com) — die täglichen Export-Dateien, die Cardmarket selbst veröffentlicht und ausdrücklich zur Nutzung in eigenen Anwendungen freigibt |
+| Turnierdecks | [onepiecetopdecks.com](https://onepiecetopdecks.com) — automatisierte Zugriffe laut `robots.txt` erlaubt, eine Seite pro Tag |
 
-## Preise: echte Cardmarket-Daten
+Dieses Projekt ist ein privates Hilfsmittel und steht in keiner Verbindung zu Bandai, Cardmarket
+oder onepiecetopdecks.com. One Piece und alle Kartenbilder gehören ihren jeweiligen Rechteinhabern.
 
-Cardmarket veröffentlicht seit 07/2025 selbst tägliche Export-Dateien und erlaubt deren Nutzung in
-eigenen Anwendungen ausdrücklich — kein API-Antrag, kein Scraping. Die Website `www.cardmarket.com`
-ist zwar durch Cloudflare geschützt (liefert 403), der Datei-Server dahinter aber nicht:
+---
 
-```
-https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_18.json
-https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_18.json
-```
+## Bekannte Grenzen
 
-`18` ist Cardmarkets Spiel-ID für One Piece. Die Produktnamen tragen die Kartennummer im Format
-`Roronoa Zoro (OP01-001)`, darüber läuft die Zuordnung zu unserem Katalog.
-
-**Aktualisieren:**
-```
-node scripts/fetch-cardmarket.js          # lädt beide Dateien neu
-node scripts/import-cardmarket-prices.js  # spielt sie in data/cards.normalized.json ein
-npm run build-db                          # verteilt in docs/ und android_app/assets/
-```
-
-Angezeigt wird Cardmarkets **Trendpreis**; fehlt der, wird auf Durchschnitt bzw. niedrigsten Preis
-zurückgegriffen (steht jeweils unter dem Betrag).
-
-**Bekannte Ungenauigkeit:** Alternative Artworks teilen sich derzeit den Preis der Normalversion.
-Cardmarket führt sie als eigene Produkte, aber ohne unterscheidbaren Namen — eine saubere Trennung
-bräuchte den Abgleich über die Edition.
-
-## Grenzen (ehrlich)
-
-1. **Nicht auf einem echten Gerät getestet.** In der Entwicklungsumgebung war kein Android-Gerät
-   angeschlossen und kein Emulator verfügbar. Getestet wurden: Kompilierung (`flutter analyze`,
-   `flutter build`) und die komplette Erkennungslogik (`flutter test`, 9 Tests). **Nicht** getestet:
-   Kamerabild, ML-Kit-Erkennung auf echten Karten, Bildrotation, Performance, Akkuverbrauch.
-2. Die Bildrotation beim Kamerastream (`_toInputImage` in `main.dart`) ist auf Hochformat und
-   Rückkamera ausgelegt. Falls Karten nicht erkannt werden, ist das der erste Verdächtige.
-3. Preise werden nicht automatisch aktualisiert — die Import-Skripte müssen manuell laufen
-   (Stand der eingespielten Daten steht in der App unter jedem Betrag).
-4. Kartendaten werden ebenfalls nicht automatisch aktualisiert — bei einem neuen Set
-   `npm run build-db` ausführen.
-5. Web-Variante: Der Zuschnitt auf den Kartenrahmen (`captureGuideFrameToCanvas`) ist nur
-   durchgerechnet, nicht an einer echten Kamera verifiziert.
-
-## Nächste sinnvolle Schritte
-- APK auf dem S24 installieren und melden, was passiert (erkennt er Karten? wie schnell?).
-- Cardmarket-Preisimport, sobald der Download von außerhalb der Sandbox klappt.
-- Sammlung dauerhaft speichern (aktuell lebt die Liste nur während der Sitzung).
-- Export (CSV) für die gescannte Liste.
+- **Preise sind nicht live** — sie entsprechen dem Stand beim Bauen der App. Der Stand steht in
+  der App unter jedem Betrag.
+- **Alt-Art-Preise** — alternative Artworks bekommen derzeit den Preis der Normalversion, obwohl
+  sie real meist teurer sind. Cardmarket führt beide unter demselben Namen.
+- **Artwork-Erkennung unter Kamerabedingungen ungetestet** — die Logik ist an 150 echten
+  Alt-Art-Karten geprüft, aber mit Katalogbildern, nicht mit Fotos bei Zimmerlicht.
+- Die Web-Version hat die neuen Tabs (Sammlung, Decks) nicht; sie ist die ältere, einfachere Fassung.
