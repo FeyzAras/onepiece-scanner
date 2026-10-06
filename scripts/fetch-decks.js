@@ -115,7 +115,14 @@ async function main() {
       continue;
     }
     const decks = parseRows(html, source);
-    console.log(`${decks.length} Decks`);
+    console.log(`${decks.length} Decks (${Math.round(html.length / 1024)} KB empfangen)`);
+    if (decks.length === 0) {
+      // Haeufigster Grund: Die Seite liefert statt der Inhalte eine Blockierseite.
+      // Die ist deutlich kleiner als das Original (~75 KB statt ~730 KB).
+      const title = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '(kein Titel)';
+      console.log(`  Titel der Antwort: ${title}`);
+      console.log(`  Tabellenzeilen im HTML: ${(html.match(/<tr/g) || []).length}`);
+    }
     all.push(...decks);
   }
 
