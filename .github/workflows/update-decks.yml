@@ -1,0 +1,40 @@
+name: Decklisten aktualisieren
+
+# Holt einmal taeglich die aktuellen Turnierdecks von onepiecetopdecks.com und
+# committet sie, falls sich etwas geaendert hat. Die App laedt die Datei direkt aus
+# dem Repository - neue Decks kommen also ohne App-Update an.
+#
+# Die robots.txt der Quelle erlaubt automatisierte Zugriffe; es wird eine Seite pro Lauf geladen.
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # taeglich 04:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Decklisten holen
+        run: node scripts/fetch-decks.js
+
+      - name: Aenderungen committen
+        run: |
+          if git diff --quiet docs/data/decks.json; then
+            echo "Keine Aenderungen."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data/decks.json
+          git commit -m "Decklisten aktualisiert ($(date -u +%Y-%m-%d))"
+          git push
