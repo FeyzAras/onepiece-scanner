@@ -29,6 +29,7 @@ Es gibt drei APK-Varianten. Für aktuelle Handys (auch Samsung S24) ist **`arm64
 </details>
 
 **Ausführliche Bedienungsanleitung: [ANLEITUNG.md](ANLEITUNG.md)**
+**Für Entwickler — wie alles funktioniert und warum: [ENTWICKLUNG.md](ENTWICKLUNG.md)**
 
 Es gibt die App auch als **Web-Version** zum Ausprobieren ohne Installation:
 **[feyzaras.github.io/onepiece-scanner](https://feyzaras.github.io/onepiece-scanner/)** —
