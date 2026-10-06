@@ -100,6 +100,10 @@ class OpCard {
   /// Artworks gibt - nur dort wird er zum Unterscheiden gebraucht.
   final String? imgHash;
 
+  /// Karte, die nie auf Englisch erschienen ist. Ihr Bild stammt dann von der
+  /// japanischen Kartenseite.
+  final bool jpOnly;
+
   /// Alle Cardmarket-Preise zu dieser Kartennummer, aufsteigend. Dient der App dazu,
   /// die Spanne anzuzeigen und den Nutzer umschalten zu lassen, falls die automatische
   /// Zuordnung danebenliegt. Leer, wenn es nur eine Version gibt.
@@ -132,6 +136,7 @@ class OpCard {
     this.price,
     this.imgHash,
     this.priceOptions = const [],
+    this.jpOnly = false,
   });
 
   factory OpCard.fromJson(Map<String, dynamic> j) => OpCard(
@@ -148,6 +153,7 @@ class OpCard {
         img: j['img'] as String?,
         price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),
         imgHash: j['imgHash'] as String?,
+        jpOnly: (j['jpOnly'] ?? false) as bool,
         priceOptions:
             (j['priceOptions'] as List?)?.map((e) => (e as num).toDouble()).toList() ?? const [],
       );

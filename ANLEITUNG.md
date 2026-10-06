@@ -95,15 +95,43 @@ Karte mit **anderem Artwork** gibt — einen Knopf zum Wechseln. Auf das Bild ti
 
 ### Decks
 
-Aktuelle Turnierdecks, dazu für jedes ein Balken: **wie viele Karten davon du schon besitzt.**
-Antippen zeigt die vollständige Deckliste, Karte für Karte mit „2/4" — also wie viele du hast und
-wie viele das Deck braucht. Grün heißt vollständig.
+Turnierdecks aus **allen Sets von OP01 bis OP17**, in englischem und japanischem Format — rund
+4.900 Decklisten, 1.864 verschiedene Deck-Archetypen. Je Archetyp sind die fünf neuesten Listen
+dabei; mehr wäre nur Wiederholung desselben Decks.
 
-Oben lässt sich nach Deck, Spieler oder Turnier suchen, und es gibt einen Filter für Decks, von
-denen du mindestens die Hälfte besitzt.
+Für jedes Deck zeigt ein Balken, **wie viele Karten davon du schon besitzt.** Antippen zeigt die
+vollständige Deckliste, Karte für Karte mit „2/4" — also wie viele du hast und wie viele das Deck
+braucht. Grün heißt vollständig.
+
+Oben lässt sich nach Deck, Spieler, Set oder Turnier suchen, nach Format filtern (Englisch /
+Japanisch) und auf Decks einschränken, von denen du mindestens die Hälfte besitzt.
 
 Quelle ist onepiecetopdecks.com; der Stand steht oben. Die App holt sich neue Decklisten selbst,
 eine neue App-Version ist dafür nicht nötig.
+
+### Sammlung exportieren
+
+Oben rechts in der Sammlung öffnet das Teilen-Symbol den **CSV-Export**: eine Tabelle mit
+Kartennummer, Name, Set, Seltenheit, Anzahl, Einzel- und Gesamtpreis, Ordner und Scandatum.
+
+Die Datei lässt sich per WhatsApp, E-Mail oder Cloud weitergeben und in Excel direkt öffnen —
+Semikolon als Trennzeichen und Komma als Dezimalzeichen, also kein Importdialog.
+
+**Das ist zugleich deine Sicherung:** Die Sammlung liegt sonst nur in der App und wäre bei einer
+Deinstallation weg.
+
+### Japanische Karten
+
+Japanische Karten funktionieren ohne Zusatzschritt — die Kartennummer ist auch dort in
+lateinischer Schrift aufgedruckt und wird normal erkannt.
+
+Zusätzlich sind **115 Karten im Katalog, die nie auf Englisch erschienen sind** (vor allem Promos
+und Starter-Deck-Karten). Die sind in den Kartendetails mit „nur auf Japanisch erschienen"
+gekennzeichnet.
+
+Was die App **nicht** unterscheiden kann: ob du den englischen oder den japanischen Druck
+derselben Karte in der Hand hältst. Beide tragen dieselbe Nummer, und am Bild sind sie zu
+ähnlich. Angezeigt wird dann das englische Artwork.
 
 > **Die Sammlung bleibt erhalten.** Sie wird auf dem Gerät gespeichert und ist beim nächsten
 > Öffnen wieder da.

@@ -6,6 +6,7 @@
 const fs = require("fs");
 const path = require("path");
 const raw = require("one-piece-card-game-json/en/cards.json");
+const rawJp = require("one-piece-card-game-json/jp/cards.json");
 
 function normalize(card) {
   const id = card.card_number || "";
@@ -23,6 +24,25 @@ function normalize(card) {
     effect: card.effects || "",
     img: card.image_url || null,
   };
+}
+
+/// Nimmt Karten auf, die es nur im japanischen Katalog gibt.
+///
+/// Hintergrund: Der japanische Katalog enthaelt dieselben lateinischen Namen und englischen
+/// Effekttexte wie der englische - nur die Bildadressen unterscheiden sich (japanisches
+/// Artwork). Japanische Karten tragen dieselbe Kartennummer in lateinischer Schrift und
+/// werden deshalb ohnehin erkannt. Was fehlt, sind die Karten, die nie auf Englisch
+/// erschienen sind: ohne sie findet die App beim Scannen schlicht keinen Eintrag.
+function japanOnly(vorhandeneIds) {
+  const liste = Array.isArray(rawJp) ? rawJp : rawJp.all || [];
+  const ergaenzt = [];
+  for (const card of liste) {
+    const entry = normalize(card);
+    if (!entry.id || !entry.name || vorhandeneIds.has(entry.id)) continue;
+    entry.jpOnly = true; // in der App als "nur japanisch erschienen" kenntlich
+    ergaenzt.push(entry);
+  }
+  return ergaenzt;
 }
 
 /// Preise und Bild-Fingerabdruecke stammen aus eigenen Schritten (import-cardmarket-prices.js,
@@ -68,8 +88,18 @@ function main() {
     normalized.push(entry);
   }
 
+  // Karten ergaenzen, die nur auf Japanisch erschienen sind
+  const nurJp = japanOnly(seen);
+  for (const entry of nurJp) {
+    const old = previous.get(entry.id);
+    if (old?.price) entry.price = old.price;
+    if (old?.imgHash) entry.imgHash = old.imgHash;
+    normalized.push(entry);
+  }
+
   fs.writeFileSync(outPath, JSON.stringify(normalized, null, 2), "utf8");
   console.log(`OK: ${normalized.length} Karten aus ${list.length} Rohdatensaetzen -> ${outPath}`);
+  console.log(`    davon nur auf Japanisch erschienen: ${nurJp.length}`);
   console.log(`    uebernommen: ${keptPrices} Preise, ${keptHashes} Bild-Fingerabdruecke`);
 }
 

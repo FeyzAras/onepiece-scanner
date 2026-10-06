@@ -59,10 +59,15 @@ Version antippen, falls die Automatik danebenliegt.
 
 **Sammlung** — Ordner, Dubletten-Zähler (×3), Suche über Name/Nummer/Set, Sortierung nach zuletzt
 gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Bleibt dauerhaft
-gespeichert.
+gespeichert und lässt sich als **CSV exportieren**.
 
-**Decks** — Aktuelle Turnierdecks, dazu für jedes ein Balken: wie viele Karten davon du besitzt.
-In der Deckliste steht je Karte „2/4" — was du hast und was das Deck braucht.
+**Decks** — Turnierdecks aus allen Sets (OP01–OP17), englisches und japanisches Format: rund 4.900
+Listen aus 1.864 Archetypen. Für jedes Deck ein Balken, wie viele Karten davon du besitzt; in der
+Deckliste steht je Karte „2/4" — was du hast und was das Deck braucht.
+
+**Japanische Karten** — funktionieren ohne Zusatzschritt, weil die Kartennummer auch dort
+lateinisch aufgedruckt ist. 115 Karten, die nie auf Englisch erschienen sind, sind zusätzlich im
+Katalog und entsprechend gekennzeichnet.
 
 ---
 
@@ -118,7 +123,7 @@ verwerfen.
 | Kartenkatalog | [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json) (npm) |
 | Kartenbilder | [en.onepiece-cardgame.com](https://en.onepiece-cardgame.com) (offizielle Bandai-Seite) |
 | Preise | [Cardmarket](https://www.cardmarket.com) — die täglichen Export-Dateien, die Cardmarket selbst veröffentlicht und ausdrücklich zur Nutzung in eigenen Anwendungen freigibt |
-| Turnierdecks | [onepiecetopdecks.com](https://onepiecetopdecks.com) — automatisierte Zugriffe laut `robots.txt` erlaubt, eine Seite pro Tag |
+| Turnierdecks | [onepiecetopdecks.com](https://onepiecetopdecks.com) — automatisierte Zugriffe laut `robots.txt` erlaubt. Die Seitenliste kommt aus der Sitemap, gelesen wird einmal täglich mit Pause zwischen den Seiten |
 
 Dieses Projekt ist ein privates Hilfsmittel und steht in keiner Verbindung zu Bandai, Cardmarket
 oder onepiecetopdecks.com. One Piece und alle Kartenbilder gehören ihren jeweiligen Rechteinhabern.

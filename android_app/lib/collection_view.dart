@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'card_model.dart';
+import 'collection_export.dart';
 import 'collection_store.dart';
 import 'widgets.dart';
 
@@ -90,6 +91,7 @@ class _CollectionViewState extends State<CollectionView> {
   String _query = '';
   SortMode _sort = SortMode.neueste;
   String? _folderFilter; // null = alle Ordner
+  bool _exporting = false;
 
   @override
   void dispose() {
@@ -147,7 +149,7 @@ class _CollectionViewState extends State<CollectionView> {
 
     return Column(
       children: [
-        _header(totalCards, totalValue, stacks.length),
+        _header(totalCards, totalValue, stacks),
         Expanded(
           child: stacks.isEmpty
               ? _emptyState()
@@ -167,7 +169,28 @@ class _CollectionViewState extends State<CollectionView> {
     );
   }
 
-  Widget _header(int totalCards, double totalValue, int distinct) {
+  Future<void> _export(List<StackedCard> stacks) async {
+    setState(() => _exporting = true);
+    try {
+      await CollectionExport.share(
+        stacks: stacks,
+        folderName: (id) =>
+            widget.folders.firstWhere((f) => f.id == id, orElse: () => const ScanFolder(id: '', name: '—')).name,
+        priceAsOf: widget.priceAsOf,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export fehlgeschlagen: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  Widget _header(int totalCards, double totalValue, List<StackedCard> stacks) {
+    final distinct = stacks.length;
     return Container(
       padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 14, right: 14, bottom: 8),
       color: kSurface,
@@ -183,6 +206,15 @@ class _CollectionViewState extends State<CollectionView> {
               ),
               Text(formatEuro(totalValue),
                   style: const TextStyle(color: kGold, fontWeight: FontWeight.bold, fontSize: 15)),
+              if (stacks.isNotEmpty)
+                IconButton(
+                  onPressed: _exporting ? null : () => _export(stacks),
+                  tooltip: 'Als CSV exportieren',
+                  visualDensity: VisualDensity.compact,
+                  icon: _exporting
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.ios_share, size: 19, color: kDim),
+                ),
             ],
           ),
           const SizedBox(height: 10),
@@ -496,10 +528,14 @@ class _CollectionViewState extends State<CollectionView> {
                         Text('${card.id} · ${card.rarity} · ${card.cardType}',
                             style: const TextStyle(color: kDim, fontSize: 12.5)),
                         const SizedBox(height: 10),
-                        Row(
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
                           children: [
                             Chip2('×${stack.count} in der Sammlung',
                                 background: kAccent, foreground: Colors.white, fontSize: 11),
+                            if (card.jpOnly)
+                              const Chip2('nur auf Japanisch erschienen', fontSize: 10.5),
                           ],
                         ),
                         const SizedBox(height: 10),

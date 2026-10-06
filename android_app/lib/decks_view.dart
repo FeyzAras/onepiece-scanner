@@ -41,6 +41,9 @@ class _DecksViewState extends State<DecksView> {
   String _query = '';
   bool _onlyBuildable = false;
 
+  /// null = beide Formate, sonst 'en' oder 'jp'
+  String? _format;
+
   @override
   void dispose() {
     _search.dispose();
@@ -80,6 +83,9 @@ class _DecksViewState extends State<DecksView> {
     }
 
     var decks = data.decks;
+    if (_format != null) {
+      decks = decks.where((d) => d.format == _format).toList();
+    }
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       decks = decks
@@ -87,6 +93,7 @@ class _DecksViewState extends State<DecksView> {
               d.name.toLowerCase().contains(q) ||
               (d.player ?? '').toLowerCase().contains(q) ||
               (d.tournament ?? '').toLowerCase().contains(q) ||
+              d.set.toLowerCase().contains(q) ||
               (d.leaderId ?? '').toLowerCase().contains(q))
           .toList();
     }
@@ -155,20 +162,46 @@ class _DecksViewState extends State<DecksView> {
             ),
           ),
           const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilterChip(
-              label: const Text('Nur Decks, die ich halb besitze', style: TextStyle(fontSize: 12)),
-              selected: _onlyBuildable,
-              showCheckmark: false,
-              selectedColor: kGold,
-              backgroundColor: kRow,
-              side: BorderSide.none,
-              labelStyle: TextStyle(color: _onlyBuildable ? const Color(0xFF241A00) : kDim),
-              onSelected: (v) => setState(() => _onlyBuildable = v),
+          SizedBox(
+            height: 34,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _formatChip(null, 'Alle Formate'),
+                _formatChip('en', 'Englisch'),
+                _formatChip('jp', 'Japanisch'),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Halb im Besitz', style: TextStyle(fontSize: 12)),
+                  selected: _onlyBuildable,
+                  showCheckmark: false,
+                  selectedColor: kGold,
+                  backgroundColor: kRow,
+                  side: BorderSide.none,
+                  labelStyle: TextStyle(color: _onlyBuildable ? const Color(0xFF241A00) : kDim),
+                  onSelected: (v) => setState(() => _onlyBuildable = v),
+                ),
+              ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _formatChip(String? value, String label) {
+    final selected = _format == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: FilterChip(
+        label: Text(label, style: const TextStyle(fontSize: 12)),
+        selected: selected,
+        showCheckmark: false,
+        selectedColor: kAccent,
+        backgroundColor: kRow,
+        side: BorderSide.none,
+        labelStyle: TextStyle(color: selected ? Colors.white : kDim),
+        onSelected: (_) => setState(() => _format = value),
       ),
     );
   }
@@ -194,8 +227,16 @@ class _DecksViewState extends State<DecksView> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(deck.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(deck.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5)),
+                        ),
+                        const SizedBox(width: 6),
+                        Chip2('${deck.set} · ${deck.formatLabel}', fontSize: 9.5),
+                      ],
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       [deck.placement, deck.tournament, deck.region].where((x) => x != null && x.isNotEmpty).join(' · '),

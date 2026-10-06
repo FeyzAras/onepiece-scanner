@@ -18,6 +18,9 @@ class DeckCard {
 }
 
 /// Ein Turnierdeck von onepiecetopdecks.com.
+///
+/// Die Datei nutzt kurze Schluessel und die Kartenliste als Zeichenkette ("4xOP17-113 …"),
+/// weil sie sonst mehrere Megabyte gross waere - sie wird aufs Handy geladen.
 class Deck {
   final String name;
   final String? leaderId;
@@ -28,6 +31,9 @@ class Deck {
   final String? tournament;
   final String? host;
   final String set;
+
+  /// 'en' oder 'jp' - englisches oder japanisches Turnierformat.
+  final String format;
   final List<DeckCard> cards;
   final int cardCount;
 
@@ -41,29 +47,51 @@ class Deck {
     this.tournament,
     this.host,
     required this.set,
+    required this.format,
     required this.cards,
     required this.cardCount,
   });
 
+  bool get istJapanisch => format == 'jp';
+  String get formatLabel => istJapanisch ? 'JP' : 'EN';
+
+  /// "4xOP17-113 1xOP09-062" -> Kartenliste
+  static List<DeckCard> parseCardList(String raw) {
+    final cards = <DeckCard>[];
+    for (final part in raw.split(' ')) {
+      final idx = part.indexOf('x');
+      if (idx <= 0) continue;
+      final qty = int.tryParse(part.substring(0, idx));
+      final id = part.substring(idx + 1);
+      if (qty == null || qty <= 0 || id.isEmpty) continue;
+      cards.add(DeckCard(id, qty));
+    }
+    return cards;
+  }
+
   static Deck? fromJson(Map<String, dynamic> j) {
-    final cards = (j['cards'] as List? ?? [])
-        .cast<Map<String, dynamic>>()
-        .map(DeckCard.fromJson)
-        .whereType<DeckCard>()
-        .toList();
+    final raw = j['c'];
+    final cards = raw is String
+        ? parseCardList(raw)
+        : (raw as List? ?? [])
+            .cast<Map<String, dynamic>>()
+            .map(DeckCard.fromJson)
+            .whereType<DeckCard>()
+            .toList();
     if (cards.isEmpty) return null;
     return Deck(
-      name: (j['name'] ?? 'Unbenannt') as String,
-      leaderId: j['leaderId'] as String?,
-      date: j['date'] as String?,
-      region: j['region'] as String?,
-      player: j['player'] as String?,
-      placement: j['placement'] as String?,
-      tournament: j['tournament'] as String?,
-      host: j['host'] as String?,
-      set: (j['set'] ?? '') as String,
+      name: (j['n'] ?? 'Unbenannt') as String,
+      leaderId: j['l'] as String?,
+      date: j['d'] as String?,
+      region: j['r'] as String?,
+      player: j['p'] as String?,
+      placement: j['pl'] as String?,
+      tournament: j['t'] as String?,
+      host: j['h'] as String?,
+      set: (j['s'] ?? '') as String,
+      format: (j['f'] ?? 'en') as String,
       cards: cards,
-      cardCount: (j['cardCount'] as num?)?.toInt() ?? cards.fold(0, (s, c) => s + c.qty),
+      cardCount: cards.fold(0, (s, c) => s + c.qty),
     );
   }
 }
