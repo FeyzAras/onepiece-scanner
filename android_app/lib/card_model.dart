@@ -55,9 +55,19 @@ class OpCard {
   final String? img;
   final CardPrice? price;
 
-  /// Welches Sammelkartenspiel. Aktuell nur One Piece, aber die Scan-Liste
+  /// Bild-Fingerabdruck (dHash). Nur gesetzt, wenn es zur Kartennummer mehrere
+  /// Artworks gibt - nur dort wird er zum Unterscheiden gebraucht.
+  final String? imgHash;
+
+  /// Welches Sammelkartenspiel. Aktuell nur One Piece, aber die Sammlung
   /// gruppiert bereits danach, damit weitere Spiele spaeter dazupassen.
   String get game => 'One Piece Card Game';
+
+  /// Set-Kuerzel aus der Kartennummer, z.B. 'OP17' aus 'OP17-113'.
+  String get setCode {
+    final idx = baseId.indexOf('-');
+    return idx > 0 ? baseId.substring(0, idx) : baseId;
+  }
 
   const OpCard({
     required this.id,
@@ -72,6 +82,7 @@ class OpCard {
     required this.effect,
     this.img,
     this.price,
+    this.imgHash,
   });
 
   factory OpCard.fromJson(Map<String, dynamic> j) => OpCard(
@@ -87,5 +98,6 @@ class OpCard {
         effect: (j['effect'] ?? '') as String,
         img: j['img'] as String?,
         price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),
+        imgHash: j['imgHash'] as String?,
       );
 }

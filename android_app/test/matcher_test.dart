@@ -82,6 +82,62 @@ Supernovas/Straw Hat Crew oo01.001 um''';
     });
   });
 
+  group('Artwork am Bild unterscheiden', () {
+    // Zu sehr vielen Nummern gibt es zwei Karten: normales Artwork und Alt-Art.
+    // Nummer und Name sind identisch - nur das Bild entscheidet.
+    test('Testkarte hat zwei Artworks mit verschiedenen Fingerabdruecken', () {
+      final normal = matcher.byId('OP01-001')!;
+      final alt = matcher.byId('OP01-001-ALT')!;
+      expect(normal.imgHash, isNotNull);
+      expect(alt.imgHash, isNotNull);
+      expect(normal.imgHash, isNot(alt.imgHash));
+    });
+
+    test('ohne Bildvergleich wird die Standardversion genommen', () {
+      final r = matcher.match('Roronoa Zoro OP01-001').match!;
+      expect(r.card.id, 'OP01-001');
+      expect(r.card.alt, isFalse);
+      expect(r.artwork, ArtworkPick.fallback, reason: 'mehrere Artworks, aber nichts zum Vergleichen');
+      expect(r.hasVariants, isTrue);
+    });
+
+    test('passender Bild-Fingerabdruck waehlt die Alt-Art', () {
+      final alt = matcher.byId('OP01-001-ALT')!;
+      final r = matcher.match('Roronoa Zoro OP01-001', cameraHash: alt.imgHash).match!;
+      expect(r.card.id, 'OP01-001-ALT');
+      expect(r.artwork, ArtworkPick.byImage);
+    });
+
+    test('passender Bild-Fingerabdruck waehlt die Normalversion', () {
+      final normal = matcher.byId('OP01-001')!;
+      final r = matcher.match('Roronoa Zoro OP01-001', cameraHash: normal.imgHash).match!;
+      expect(r.card.id, 'OP01-001');
+      expect(r.artwork, ArtworkPick.byImage);
+    });
+
+    test('bei eindeutiger Nummer gibt es nichts zu entscheiden', () {
+      // Karte ohne zweites Artwork suchen
+      final solo = matcher.cards.firstWhere((c) => matcher.variantsOf(c).length == 1);
+      final r = matcher.match(solo.baseId).match!;
+      expect(r.artwork, ArtworkPick.single);
+      expect(r.hasVariants, isFalse);
+    });
+
+    test('Artwork-Entscheidung funktioniert fuer viele Karten, nicht nur die Testkarte', () {
+      var correct = 0;
+      var tested = 0;
+      for (final card in matcher.cards.where((c) => c.alt && c.imgHash != null).take(150)) {
+        final r = matcher.match(card.baseId, cameraHash: card.imgHash).match;
+        if (r == null) continue;
+        tested++;
+        if (r.card.id == card.id) correct++;
+      }
+      expect(tested, greaterThan(100));
+      expect(correct / tested, greaterThan(0.95),
+          reason: 'bei passendem Fingerabdruck muss fast immer das richtige Artwork gewaehlt werden');
+    });
+  });
+
   group('Cardmarket-Preise', () {
     test('Beispielkarte hat echten Preis', () {
       final card = matcher.byId('OP01-001')!;

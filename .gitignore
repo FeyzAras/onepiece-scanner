@@ -3,3 +3,4 @@ data/cards.normalized.json
 eng.traineddata
 data/cm_products_*.json
 data/cm_prices_*.json
+data/img-cache/

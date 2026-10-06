@@ -23,15 +23,29 @@ im Obsidian-Vault.
 funktioniert offline, keine Cloud). Kartenkatalog liegt als Asset in der App.
 
 **So funktioniert das Erkennen:**
-1. Die Kamera liefert laufend Bilder (ca. alle 450 ms wird eins ausgewertet).
+1. Die Kamera liefert laufend Bilder (ca. alle 350 ms wird eins ausgewertet).
 2. ML Kit liest den Text auf der Karte.
-3. Abgleich in zwei Stufen:
-   - **Kartennummer** (z. B. `OP01-001`) — eindeutig, trennt auch gleichnamige Karten sauber.
-     Typische OCR-Fehler werden ausgeglichen (`oo01.001` → `OP01-001`), akzeptiert wird nur,
-     was einer real existierenden Karten-ID entspricht.
-   - **Kartenname** — Fallback, wenn die Nummer nicht lesbar war.
-4. Treffer landet in der Session-Liste (Bild, Name, Set-Nummer, Preis). Dieselbe Karte wird
-   innerhalb von 4 Sekunden nicht doppelt eingetragen.
+3. **Die Kartennummer ist Pflicht** (z. B. `OP01-001`). Typische OCR-Fehler werden ausgeglichen
+   (`oo01.001` → `OP01-001`); akzeptiert wird nur, was einer real existierenden Karten-ID
+   entspricht. Der Kartenname allein reicht **nicht** — Namen anderer Karten stehen im Effekttext
+   und führten früher zu Fehltreffern.
+4. **Artwork-Entscheidung:** Zu 1.083 Nummern gibt es zwei Karten (normal + Alt-Art). Welche
+   gemeint ist, entscheidet ein Bild-Fingerabdruck (dHash): für alle 2.166 betroffenen Karten
+   vorab berechnet, zur Laufzeit mit dem Kamerabild verglichen.
+5. **Mehrfachbestätigung:** Dieselbe Nummer muss zweimal gelesen werden, bevor die Karte in die
+   Sammlung wandert. Dieselbe Karte wird innerhalb von 5 Sekunden nicht doppelt eingetragen.
+
+**Aufbau:** drei Tabs — Scannen, Sammlung (Ordner, Dubletten-Zähler, Suche, Sortierung) und
+Decks (Turnierdecks mit Abgleich gegen die eigene Sammlung).
+
+**Datenpflege-Skripte:**
+```
+node scripts/fetch-cardmarket.js          # Cardmarket-Export laden
+node scripts/import-cardmarket-prices.js  # Preise einspielen
+node scripts/build-image-hashes.js        # Bild-Fingerabdruecke berechnen (laedt ~2200 Bilder)
+node scripts/fetch-decks.js               # Turnierdecks holen
+npm run build-db                          # Kartendaten neu bauen und verteilen
+```
 
 **Bauen:**
 ```
@@ -65,7 +79,9 @@ ML Kit, ca. 2–4 s pro Versuch). Liegt in `docs/`, damit GitHub Pages es direkt
 
 | Teil | Status |
 | --- | --- |
-| Dauer-Scan, Erkennung, Session-Liste, Gesamtwert (beide Varianten) | **echt**, gebaut und auf Logik-Ebene getestet |
+| Dauer-Scan, Erkennung, Sammlung mit Ordnern, Dubletten, Suche, Sortierung | **echt**, gebaut und auf Logik-Ebene getestet (31 Tests) |
+| Artwork-Unterscheidung über Bild-Fingerabdruck | **echt** — getestet an 150 echten Alt-Art-Karten; unter realen Kamerabedingungen aber ungeprüft |
+| Deck-Tab mit Turnierdecks und Sammlungsabgleich | **echt** — 336 Decks, Quelle onepiecetopdecks.com |
 | OCR | **echt** — ML Kit (App) bzw. tesseract.js (Web) |
 | Kartennummer- und Namensabgleich | **echt**, durch automatische Tests abgedeckt (`flutter test`, `node scripts/verify-match.mjs`) |
 | Kartenkatalog | **echt, aktuell** — npm-Paket [`one-piece-card-game-json`](https://www.npmjs.com/package/one-piece-card-game-json), Stand 09/2026, 3.868 Karten, OP01–OP17 + EB + Promos + ST01–36 |

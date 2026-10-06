@@ -1,4 +1,5 @@
 import 'card_model.dart';
+import 'image_hash.dart';
 
 /// Ergebnis eines Erkennungsversuchs.
 ///
@@ -9,12 +10,31 @@ class MatchResult {
   final OpCard card;
 
   /// true, wenn zusaetzlich zur Nummer auch der Kartenname im gelesenen Text steht.
-  /// Dann stimmen zwei unabhaengige Merkmale ueberein - hoechste Sicherheit.
   final bool nameConfirmed;
 
-  const MatchResult(this.card, this.nameConfirmed);
+  /// Alle Karten mit dieser Nummer (normales Artwork und Alt-Art). Mehr als ein
+  /// Eintrag heisst: Es musste am Bild entschieden werden.
+  final List<OpCard> variants;
+
+  /// Wie sicher die Artwork-Entscheidung war.
+  final ArtworkPick artwork;
+
+  const MatchResult(this.card, this.nameConfirmed, this.variants, this.artwork);
 
   String get how => nameConfirmed ? 'number+name' : 'number';
+  bool get hasVariants => variants.length > 1;
+}
+
+enum ArtworkPick {
+  /// Nur ein Artwork zu dieser Nummer - nichts zu entscheiden.
+  single,
+
+  /// Mehrere Artworks, per Bildvergleich entschieden.
+  byImage,
+
+  /// Mehrere Artworks, aber kein brauchbarer Bildvergleich moeglich -
+  /// es wurde die Standardversion genommen.
+  fallback,
 }
 
 /// Was ein Erkennungsdurchlauf ergeben hat - auch der Fall "Name gelesen, Nummer nicht"
@@ -30,9 +50,10 @@ class MatchOutcome {
 
 const List<String> _knownPrefixes = ['OP', 'ST', 'EB', 'PRB', 'P'];
 
-/// Kandidaten fuer eine Kartennummer: kurzer Set-Code + Trenner + drei Ziffern.
-/// Bewusst tolerant, weil OCR haeufig danebenliegt ("oo01.001" statt "OP01-001").
-/// Akzeptiert wird am Ende nur, was einer real existierenden Karten-ID entspricht.
+/// Ab diesem Abstand zwischen den beiden Artwork-Kandidaten gilt die Entscheidung
+/// als belastbar. Darunter wird die Standardversion genommen.
+const int kArtworkDecisionMargin = 4;
+
 final RegExp _candidateRe = RegExp(r'\b([A-Za-z0-9]{1,5})\s*[-–—_.·]\s*(\d{3})\b');
 final RegExp _headSplitRe = RegExp(r'^([A-Z0-9]*?)([0-9O]{0,2})$');
 
@@ -65,30 +86,72 @@ List<String> _prefixCandidates(String letters) {
 class CardMatcher {
   final List<OpCard> cards;
   final Map<String, OpCard> _byId;
+  final Map<String, List<OpCard>> _byBaseId;
 
-  CardMatcher(this.cards) : _byId = {for (final c in cards) c.id.toUpperCase(): c};
+  CardMatcher(this.cards)
+      : _byId = {for (final c in cards) c.id.toUpperCase(): c},
+        _byBaseId = _groupByBase(cards);
+
+  static Map<String, List<OpCard>> _groupByBase(List<OpCard> cards) {
+    final map = <String, List<OpCard>>{};
+    for (final c in cards) {
+      map.putIfAbsent(c.baseId.toUpperCase(), () => []).add(c);
+    }
+    // Standardversion (ohne Alt-Art-Kennzeichnung) zuerst
+    for (final list in map.values) {
+      list.sort((a, b) => (a.alt ? 1 : 0).compareTo(b.alt ? 1 : 0));
+    }
+    return map;
+  }
 
   OpCard? byId(String id) => _byId[id.toUpperCase()];
 
-  MatchOutcome match(String ocrText) {
+  List<OpCard> variantsOf(OpCard card) => _byBaseId[card.baseId.toUpperCase()] ?? [card];
+
+  /// [cameraHash] ist der Bild-Fingerabdruck des aktuellen Kamerabildes. Er entscheidet,
+  /// welches Artwork gemeint ist, wenn es zu einer Nummer mehrere gibt.
+  MatchOutcome match(String ocrText, {String? cameraHash}) {
     final tokens = normalizeTokens(ocrText);
     final joined = tokens.join(' ');
 
-    final card = _findByNumber(ocrText);
-    if (card != null) {
-      final nameTokens = normalizeTokens(card.name);
-      final nameJoined = nameTokens.join(' ');
-      final nameConfirmed = nameJoined.length > 2 && joined.contains(nameJoined);
-      return MatchOutcome(match: MatchResult(card, nameConfirmed));
+    final baseId = _findNumber(ocrText);
+    if (baseId != null) {
+      final variants = _byBaseId[baseId] ?? const [];
+      if (variants.isNotEmpty) {
+        final picked = _pickVariant(variants, cameraHash);
+        final nameTokens = normalizeTokens(picked.card.name);
+        final nameJoined = nameTokens.join(' ');
+        final nameConfirmed = nameJoined.length > 2 && joined.contains(nameJoined);
+        return MatchOutcome(
+          match: MatchResult(picked.card, nameConfirmed, variants, picked.pick),
+        );
+      }
     }
 
-    // Keine Nummer lesbar. Falls wenigstens ein Kartenname erkennbar ist, wird er als
-    // Hinweis zurueckgegeben - aber NICHT als Treffer uebernommen.
-    final nameGuess = _bestNameGuess(tokens, joined);
-    return MatchOutcome(nameOnlyHint: nameGuess);
+    return MatchOutcome(nameOnlyHint: _bestNameGuess(joined));
   }
 
-  OpCard? _findByNumber(String text) {
+  ({OpCard card, ArtworkPick pick}) _pickVariant(List<OpCard> variants, String? cameraHash) {
+    if (variants.length == 1) return (card: variants.first, pick: ArtworkPick.single);
+
+    if (cameraHash != null) {
+      final scored = <({OpCard card, int distance})>[];
+      for (final v in variants) {
+        final h = v.imgHash;
+        if (h != null) scored.add((card: v, distance: ImageHash.distance(cameraHash, h)));
+      }
+      if (scored.length >= 2) {
+        scored.sort((a, b) => a.distance.compareTo(b.distance));
+        final margin = scored[1].distance - scored[0].distance;
+        if (margin >= kArtworkDecisionMargin) {
+          return (card: scored.first.card, pick: ArtworkPick.byImage);
+        }
+      }
+    }
+    return (card: variants.first, pick: ArtworkPick.fallback);
+  }
+
+  String? _findNumber(String text) {
     for (final m in _candidateRe.allMatches(text)) {
       final rawHead = m.group(1)!.toUpperCase();
       final tail = m.group(2)!;
@@ -102,16 +165,15 @@ class CardMatcher {
           '$prefix-$tail',
         ];
         for (final id in ids) {
-          final card = _byId[id];
-          if (card != null) return card;
+          if (_byBaseId.containsKey(id)) return id;
         }
       }
     }
     return null;
   }
 
-  String? _bestNameGuess(List<String> tokens, String joined) {
-    if (tokens.isEmpty) return null;
+  String? _bestNameGuess(String joined) {
+    if (joined.isEmpty) return null;
     for (final card in cards) {
       final nameTokens = normalizeTokens(card.name);
       if (nameTokens.isEmpty) continue;

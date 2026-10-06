@@ -52,6 +52,16 @@ erkannt. Die aufgedruckte Nummer ist dagegen eindeutig.
 Deshalb gilt: **Ohne lesbare Nummer wird nichts übernommen.** Erkennt die App nur den Namen, zeigt
 sie einen Hinweis („… erkannt – Kartennummer unten rechts ins Bild halten"), trägt aber nichts ein.
 
+### Und wenn zwei Karten dieselbe Nummer haben?
+
+Das kommt oft vor: Zu 1.083 Kartennummern gibt es **zwei Versionen** — normales Artwork und
+Alt-Art. Nummer und Name sind identisch, nur das Bild unterscheidet sich.
+
+Die App vergleicht deshalb zusätzlich das Kamerabild mit beiden Versionen: Für jedes Kartenbild
+ist ein Bild-Fingerabdruck hinterlegt, die App berechnet denselben aus dem Kamerabild und nimmt
+die ähnlichere Version. Liegt sie trotzdem mal daneben, kannst du in den Kartendetails mit einem
+Tipp auf **„wechseln"** das andere Artwork wählen.
+
 **Der runde Knopf unten ist kein Auslöser**, sondern Pause/Weiter. Nützlich, wenn du kurz etwas
 anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsammelt.
 
@@ -67,20 +77,39 @@ anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsa
 
 <img src="docs/images/ui-liste.svg" width="300" alt="Liste der gescannten Karten mit Namen, Set-Nummer, Erkennungsart und Preis">
 
-Unten siehst du immer einen **Streifen mit Miniaturbildern** der gescannten Karten, jeweils mit
-Preis darunter. Auf eine Miniatur tippen öffnet die Kartendetails (großes Bild, Set, Seltenheit,
-Preis mit Stand, Effekttext, Löschen-Knopf).
+Die App hat unten drei Tabs: **Scannen**, **Sammlung** und **Decks**.
 
-Das Feld **nach oben ziehen** zeigt die vollständige Liste.
+### Ordner
+
+Oben im Scannen-Tab steht, in welchen Ordner gescannt wird. Antippen öffnet die Ordnerverwaltung:
+wechseln, neue anlegen, löschen. **Neu gescannte Karten landen immer im ausgewählten Ordner.**
+
+### Sammlung
+
+Kartengitter mit Bild, Name, Nummer und Preis.
 
 | Element | Bedeutung |
 | --- | --- |
-| **Zahl + Betrag** oben | Anzahl der Karten und Gesamtwert der Sammlung |
-| 🗂 **Ordner-Zeile** | Gruppiert nach Sammelkartenspiel, mit Anzahl und Zwischensumme. Aktuell nur One Piece — vorbereitet für weitere Spiele |
-| 🟩 **Nummer + Name** | Kartennummer gelesen **und** Name stimmt überein — höchste Sicherheit |
-| 🟩 **Nummer** | Kartennummer gelesen, Name war nicht lesbar. Die Nummer allein ist bereits eindeutig |
-| **Cardmarket Trend** | Echter Cardmarket-Preis. Steht stattdessen „Durchschnitt" o. Ä., gab es für diese Karte keinen Trendpreis |
-| **Sammlung leeren** | Alles entfernen (mit Rückfrage) |
+| **×3** rote Ecke | So oft hast du diese Karte gescannt. Der Preis darunter ist der Gesamtwert aller Exemplare |
+| **Suchfeld** | Durchsucht Name, Kartennummer, Set und Kartentyp |
+| **Ordner-Knöpfe** | Auf einen Ordner einschränken oder „Alle Ordner" |
+| **Sortierung** | Zuletzt gescannt, Name, Set (OP13, OP14, OP17 …) oder Preis |
+
+Auf eine Karte tippen öffnet die Details: Preis mit Stand, Effekttext, Anzahl, und — falls es die
+Karte mit **anderem Artwork** gibt — einen Knopf zum Wechseln. Auf das Bild tippen zeigt es im
+**Vollbild**, dort lässt es sich mit zwei Fingern vergrößern.
+
+### Decks
+
+Aktuelle Turnierdecks, dazu für jedes ein Balken: **wie viele Karten davon du schon besitzt.**
+Antippen zeigt die vollständige Deckliste, Karte für Karte mit „2/4" — also wie viele du hast und
+wie viele das Deck braucht. Grün heißt vollständig.
+
+Oben lässt sich nach Deck, Spieler oder Turnier suchen, und es gibt einen Filter für Decks, von
+denen du mindestens die Hälfte besitzt.
+
+Quelle ist onepiecetopdecks.com; der Stand steht oben. Die App holt sich neue Decklisten selbst,
+eine neue App-Version ist dafür nicht nötig.
 
 > **Die Sammlung bleibt erhalten.** Sie wird auf dem Gerät gespeichert und ist beim nächsten
 > Öffnen wieder da.
