@@ -39,7 +39,10 @@ function carryOver(outPath) {
 }
 
 function main() {
-  const outPath = path.join(__dirname, "..", "data", "cards.normalized.json");
+  const dataDir = path.join(__dirname, "..", "data");
+  // data/ ist bewusst nicht versioniert (Zwischendateien), fehlt also im frischen Checkout
+  fs.mkdirSync(dataDir, { recursive: true });
+  const outPath = path.join(dataDir, "cards.normalized.json");
   const previous = carryOver(outPath);
 
   const list = Array.isArray(raw) ? raw : raw.all || [];

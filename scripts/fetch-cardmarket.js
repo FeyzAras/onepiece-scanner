@@ -14,7 +14,9 @@ const TARGETS = [
 ];
 
 async function download({ url, file }) {
-  const target = path.join(__dirname, "..", "data", file);
+  const dataDir = path.join(__dirname, "..", "data");
+  fs.mkdirSync(dataDir, { recursive: true }); // fehlt im frischen Checkout, weil nicht versioniert
+  const target = path.join(dataDir, file);
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url} -> HTTP ${res.status}`);
   const buffer = Buffer.from(await res.arrayBuffer());
