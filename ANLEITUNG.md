@@ -140,8 +140,16 @@ und mit „von dir ausgewählt" markiert; über „zurücksetzen" geht es wieder
 
 In der Übersicht zeigt ein kleines **❓** neben dem Betrag an, dass die Zuordnung unsicher ist.
 
-**Noch zu beachten:** Die Preise sind in der App fest eingebaut, nicht live — sie entsprechen dem
-Stand beim Bauen der App (steht unter jedem Betrag).
+### Bleiben die Preise aktuell?
+
+Ja. Die App holt sich beim Start die **tagesaktuellen Preise** (rund 150 KB) — eine neue App-Version
+ist dafür nicht nötig. Der Stand steht unter jedem Betrag.
+
+Ohne Internet gelten die zuletzt geladenen Preise, und davor die in der App mitgelieferten. Es
+steht also immer ein Preis da, höchstens ein älterer.
+
+Deine manuelle Auswahl bleibt dabei richtig: Gespeichert wird **welche Version** du gewählt hast,
+nicht der Betrag. Die aktualisiert sich also mit.
 
 ---
 

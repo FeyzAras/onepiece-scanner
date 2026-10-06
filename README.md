@@ -74,7 +74,7 @@ In der Deckliste steht je Karte „2/4" — was du hast und was das Deck braucht
 | `docs/` | Die Web-Version (PWA), wird von GitHub Pages ausgeliefert |
 | `scripts/` | Datenpflege: Kartenkatalog, Preise, Bild-Fingerabdrücke, Decklisten |
 | `data/` | Zwischenstände der Datenpipeline (nicht versioniert) |
-| `.github/workflows/` | Tägliche Aktualisierung der Decklisten |
+| `.github/workflows/` | Tägliche Aktualisierung von Preisen und Decklisten |
 
 ### Technik
 
@@ -127,8 +127,9 @@ oder onepiecetopdecks.com. One Piece und alle Kartenbilder gehören ihren jeweil
 
 ## Bekannte Grenzen
 
-- **Preise sind nicht live** — sie entsprechen dem Stand beim Bauen der App. Der Stand steht in
-  der App unter jedem Betrag.
+- **Preise sind tagesaktuell, aber nicht in Echtzeit.** Eine GitHub Action holt sie einmal täglich,
+  die App lädt sie beim Start. Innerhalb eines Tages ändern sie sich nicht — Cardmarkets
+  Trendpreis tut das ohnehin nicht stündlich.
 - **Druckvarianten-Zuordnung beruht auf zwei Annahmen.** Cardmarket liefert keine Editionsnamen,
   nur Nummern; welche Edition das Originalset ist, wird aus den enthaltenen Kartennummern
   abgeleitet (die zuerst angelegte „reine" Edition eines Sets). Und wo zwei Produkte in einer

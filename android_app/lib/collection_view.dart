@@ -54,8 +54,17 @@ class CollectionView extends StatefulWidget {
   /// Geltender Einzelpreis einer Karte (automatisch zugeordnet oder vom Nutzer gewaehlt).
   final double Function(OpCard card) priceOf;
 
-  /// Setzt einen abweichenden Preis, oder loescht die Auswahl bei null.
-  final void Function(OpCard card, double? amount) onChoosePrice;
+  /// Alle Cardmarket-Versionen dieser Kartennummer, aufsteigend.
+  final List<double> Function(OpCard card) optionsFor;
+
+  /// Welche Version der Nutzer gewaehlt hat (Platz in der Liste), oder null.
+  final int? Function(OpCard card) choiceOf;
+
+  /// Waehlt eine Version, oder setzt bei null auf die automatische Zuordnung zurueck.
+  final void Function(OpCard card, int? optionIndex) onChoosePrice;
+
+  /// Stand der geltenden Preisdaten.
+  final String priceAsOf;
 
   const CollectionView({
     super.key,
@@ -66,7 +75,10 @@ class CollectionView extends StatefulWidget {
     required this.variantsOf,
     required this.onManageFolders,
     required this.priceOf,
+    required this.optionsFor,
+    required this.choiceOf,
     required this.onChoosePrice,
+    required this.priceAsOf,
   });
 
   @override
@@ -336,8 +348,9 @@ class _CollectionViewState extends State<CollectionView> {
   Widget _priceSection(BuildContext ctx, StackedCard stack) {
     final card = stack.card;
     final price = card.price!;
-    final options = card.priceOptions;
-    final chosenByUser = (stack.unitPrice - price.amount).abs() > 0.004;
+    final options = widget.optionsFor(card);
+    final chosenIndex = widget.choiceOf(card);
+    final chosenByUser = chosenIndex != null;
 
     final confidenceColor = switch (price.confidence) {
       PriceConfidence.eindeutig => kOk,
@@ -394,30 +407,31 @@ class _CollectionViewState extends State<CollectionView> {
                 spacing: 6,
                 runSpacing: 6,
                 children: [
-                  for (final option in options)
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        widget.onChoosePrice(card, option);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: (stack.unitPrice - option).abs() < 0.004 ? kGold : kChip,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          formatEuro(option),
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: (stack.unitPrice - option).abs() < 0.004
-                                ? const Color(0xFF241A00)
-                                : kDim,
+                  for (var i = 0; i < options.length; i++)
+                    Builder(builder: (_) {
+                      final istGewaehlt = (stack.unitPrice - options[i]).abs() < 0.004;
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          widget.onChoosePrice(card, i);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: istGewaehlt ? kGold : kChip,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            formatEuro(options[i]),
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: istGewaehlt ? const Color(0xFF241A00) : kDim,
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    }),
                 ],
               ),
               const SizedBox(height: 6),
@@ -492,8 +506,11 @@ class _CollectionViewState extends State<CollectionView> {
                         Text(price == null ? 'kein Preis hinterlegt' : formatEuro(stack.unitPrice),
                             style: const TextStyle(color: kGold, fontWeight: FontWeight.bold, fontSize: 20)),
                         if (price != null)
-                          Text('Cardmarket ${price.basisLabel} · Stand ${price.asOf}',
-                              style: const TextStyle(color: kDim, fontSize: 11)),
+                          Text(
+                            'Cardmarket ${price.basisLabel} · Stand '
+                            '${widget.priceAsOf.isEmpty ? price.asOf : widget.priceAsOf}',
+                            style: const TextStyle(color: kDim, fontSize: 11),
+                          ),
                         if (stack.count > 1 && price != null)
                           Text('zusammen ${formatEuro(stack.totalValue)}',
                               style: const TextStyle(color: kDim, fontSize: 11.5)),

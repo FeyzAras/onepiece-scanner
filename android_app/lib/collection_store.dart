@@ -53,16 +53,24 @@ class CollectionState {
   final String activeFolderId;
   final List<StoredScan> scans;
 
-  /// Vom Nutzer selbst gewaehlte Preise, nach Karten-ID. Noetig, weil Cardmarket pro
-  /// Kartennummer mehrere Druckvarianten mit teils sehr verschiedenen Preisen fuehrt und
-  /// die automatische Zuordnung danebenliegen kann.
-  final Map<String, double> priceOverrides;
+  /// Vom Nutzer gewaehlte Druckvariante, nach Karten-ID: der Platz in der aufsteigend
+  /// sortierten Liste aller Cardmarket-Versionen dieser Kartennummer.
+  ///
+  /// Bewusst der Platz und nicht der Betrag: Die Preise werden taeglich aktualisiert.
+  /// Ein gespeicherter Betrag wuerde dazu fuehren, dass genau die vom Nutzer korrigierten
+  /// Karten als einzige auf einem alten Preis einfrieren.
+  final Map<String, int> priceChoice;
+
+  /// Aus einer frueheren Fassung uebernommene Betraege. Werden beim ersten Oeffnen in
+  /// einen Platz umgerechnet, sobald die Versionsliste vorliegt.
+  final Map<String, double> legacyPriceAmounts;
 
   const CollectionState({
     required this.folders,
     required this.activeFolderId,
     required this.scans,
-    this.priceOverrides = const {},
+    this.priceChoice = const {},
+    this.legacyPriceAmounts = const {},
   });
 }
 
@@ -90,16 +98,22 @@ class CollectionStore {
             .map(StoredScan.fromJson)
             .whereType<StoredScan>()
             .toList();
-        final overrides = <String, double>{};
+        final choice = <String, int>{};
+        (map['priceChoice'] as Map<String, dynamic>? ?? {}).forEach((key, value) {
+          final index = (value as num?)?.toInt();
+          if (index != null && index >= 0) choice[key] = index;
+        });
+        final legacy = <String, double>{};
         (map['prices'] as Map<String, dynamic>? ?? {}).forEach((key, value) {
           final amount = (value as num?)?.toDouble();
-          if (amount != null) overrides[key] = amount;
+          if (amount != null && !choice.containsKey(key)) legacy[key] = amount;
         });
         return CollectionState(
           folders: folders.isEmpty ? _defaultFolders() : folders,
           activeFolderId: (map['active'] as String?) ?? defaultFolderId,
           scans: scans,
-          priceOverrides: overrides,
+          priceChoice: choice,
+          legacyPriceAmounts: legacy,
         );
       } catch (_) {
         // beschaedigte Daten: lieber leer starten als abstuerzen
@@ -138,7 +152,7 @@ class CollectionStore {
         'folders': state.folders.map((f) => f.toJson()).toList(),
         'active': state.activeFolderId,
         'scans': state.scans.map((s) => s.toJson()).toList(),
-        'prices': state.priceOverrides,
+        'priceChoice': state.priceChoice,
       }),
     );
   }

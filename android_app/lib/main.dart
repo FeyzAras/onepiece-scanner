@@ -9,6 +9,7 @@ import 'collection_store.dart';
 import 'collection_view.dart';
 import 'deck_model.dart';
 import 'decks_view.dart';
+import 'price_store.dart';
 import 'scanner_view.dart';
 import 'widgets.dart';
 
@@ -52,9 +53,12 @@ class _HomePageState extends State<HomePage> {
   List<ScanFolder> _folders = const [];
   String _activeFolderId = CollectionStore.defaultFolderId;
 
-  /// Vom Nutzer gewaehlte Preise je Karten-ID, wenn die automatische Zuordnung
-  /// zur Druckvariante danebenlag.
-  final Map<String, double> _priceOverrides = {};
+  /// Vom Nutzer gewaehlte Druckvariante je Karten-ID: der Platz in der Versionsliste.
+  final Map<String, int> _priceChoice = {};
+
+  /// Tagesaktuelle Preise aus dem Repository. Null, solange nichts geladen wurde -
+  /// dann gelten die im Katalog mitgelieferten Preise.
+  LivePrices? _livePrices;
 
   DeckData? _decks;
   bool _decksLoading = true;
@@ -84,15 +88,48 @@ class _HomePageState extends State<HomePage> {
       _matcher = matcher;
       _folders = state.folders;
       _activeFolderId = state.activeFolderId;
-      _priceOverrides
+      _priceChoice
         ..clear()
-        ..addAll(state.priceOverrides);
+        ..addAll(state.priceChoice);
       _collection
         ..clear()
         ..addAll(restored);
     });
 
+    await _loadPrices();
+    _migrateLegacyChoices(state.legacyPriceAmounts, matcher);
     await _loadDecks();
+  }
+
+  Future<void> _loadPrices() async {
+    final cached = await PriceStore.loadCached();
+    if (mounted && cached != null) setState(() => _livePrices = cached);
+    final remote = await PriceStore.fetchRemote();
+    if (mounted && remote != null) setState(() => _livePrices = remote);
+  }
+
+  /// Eine fruehere Fassung speicherte die Preisauswahl als Betrag. Betraege veralten,
+  /// sobald die Preise aktualisiert werden - deshalb wird daraus einmalig der Platz
+  /// in der Versionsliste bestimmt.
+  void _migrateLegacyChoices(Map<String, double> legacy, CardMatcher matcher) {
+    if (legacy.isEmpty) return;
+    var changed = false;
+    legacy.forEach((cardId, amount) {
+      final card = matcher.byId(cardId);
+      if (card == null) return;
+      final options = _optionsFor(card);
+      if (options.length < 2) return;
+      var best = 0;
+      for (var i = 1; i < options.length; i++) {
+        if ((options[i] - amount).abs() < (options[best] - amount).abs()) best = i;
+      }
+      _priceChoice[cardId] = best;
+      changed = true;
+    });
+    if (changed) {
+      setState(() {});
+      _persist();
+    }
   }
 
   Future<void> _loadDecks() async {
@@ -112,26 +149,43 @@ class _HomePageState extends State<HomePage> {
         folders: _folders,
         activeFolderId: _activeFolderId,
         scans: _collection.map((e) => e.toStored()).toList(),
-        priceOverrides: _priceOverrides,
+        priceChoice: _priceChoice,
       ));
 
-  /// Geltender Einzelpreis: die vom Nutzer gewaehlte Version, sonst die automatisch zugeordnete.
-  double _priceOf(OpCard card) => _priceOverrides[card.id] ?? card.price?.amount ?? 0;
+  /// Alle Cardmarket-Versionen dieser Kartennummer - bevorzugt tagesaktuell,
+  /// sonst aus dem mitgelieferten Katalog.
+  List<double> _optionsFor(OpCard card) =>
+      _livePrices?.optionsByBaseId[card.baseId] ?? card.priceOptions;
 
-  void _choosePrice(OpCard card, double? amount) {
+  /// Geltender Einzelpreis, in dieser Reihenfolge:
+  /// vom Nutzer gewaehlte Version -> tagesaktueller Preis -> Preis aus dem Katalog.
+  double _priceOf(OpCard card) {
+    final choice = _priceChoice[card.id];
+    if (choice != null) {
+      final options = _optionsFor(card);
+      if (choice < options.length) return options[choice];
+    }
+    return _livePrices?.byCardId[card.id] ?? card.price?.amount ?? 0;
+  }
+
+  /// Stand der geltenden Preisdaten.
+  String get _priceAsOf => _livePrices?.asOf ?? '';
+
+  void _choosePrice(OpCard card, int? optionIndex) {
     setState(() {
-      if (amount == null) {
-        _priceOverrides.remove(card.id);
+      if (optionIndex == null) {
+        _priceChoice.remove(card.id);
       } else {
-        _priceOverrides[card.id] = amount;
+        _priceChoice[card.id] = optionIndex;
       }
     });
     _persist();
     if (!mounted) return;
+    final options = _optionsFor(card);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(amount == null
+      content: Text(optionIndex == null
           ? 'Preis zurückgesetzt: ${card.name}'
-          : 'Preis gesetzt: ${amount.toStringAsFixed(2)} € für ${card.name}'),
+          : 'Preis gesetzt: ${options[optionIndex].toStringAsFixed(2)} € für ${card.name}'),
       duration: const Duration(seconds: 2),
     ));
   }
@@ -329,7 +383,10 @@ class _HomePageState extends State<HomePage> {
             variantsOf: (card) => _matcher?.variantsOf(card) ?? [card],
             onManageFolders: _manageFolders,
             priceOf: _priceOf,
+            optionsFor: _optionsFor,
+            choiceOf: (card) => _priceChoice[card.id],
             onChoosePrice: _choosePrice,
+            priceAsOf: _priceAsOf,
           ),
           DecksView(
             data: _decks,
