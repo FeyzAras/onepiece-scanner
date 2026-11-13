@@ -52,6 +52,9 @@ class CollectionView extends StatefulWidget {
   final List<OpCard> Function(OpCard card) variantsOf;
   final VoidCallback onManageFolders;
 
+  /// Oeffnet das Import-Blatt. Liegt in main.dart, weil nur dort der Bestand liegt.
+  final VoidCallback onImport;
+
   /// Geltender Einzelpreis einer Karte (automatisch zugeordnet oder vom Nutzer gewaehlt).
   final double Function(OpCard card) priceOf;
 
@@ -79,6 +82,7 @@ class CollectionView extends StatefulWidget {
     required this.onSwitchArtwork,
     required this.variantsOf,
     required this.onManageFolders,
+    required this.onImport,
     required this.priceOf,
     required this.optionsFor,
     required this.choiceOf,
@@ -254,6 +258,14 @@ class _CollectionViewState extends State<CollectionView> {
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.ios_share, size: 19, color: kDim),
                 ),
+              // Bewusst IMMER sichtbar: Nach einer Neuinstallation ist die Sammlung
+              // leer - und genau dann braucht man das Wiederherstellen.
+              IconButton(
+                onPressed: widget.onImport,
+                tooltip: 'Liste einlesen oder Sicherung wiederherstellen',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.file_download_outlined, size: 20, color: kDim),
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -343,12 +355,27 @@ class _CollectionViewState extends State<CollectionView> {
   Widget _emptyState() => Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Text(
-            _query.isNotEmpty
-                ? 'Nichts gefunden für „$_query".'
-                : 'Noch keine Karten in diesem Ordner.\nWechsle zum Scannen-Tab und halte eine Karte vor die Kamera.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: kDim, fontSize: 13.5, height: 1.5),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _query.isNotEmpty
+                    ? 'Nichts gefunden für „$_query".'
+                    : 'Noch keine Karten in diesem Ordner.\nWechsle zum Scannen-Tab und halte eine Karte vor die Kamera.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: kDim, fontSize: 13.5, height: 1.5),
+              ),
+              // Nur wenn die Sammlung wirklich leer ist - nicht, wenn bloss der
+              // Filter nichts findet. Das ist die Lage nach einer Neuinstallation.
+              if (_query.isEmpty && widget.entries.isEmpty) ...[
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  onPressed: widget.onImport,
+                  icon: const Icon(Icons.file_download_outlined, size: 18),
+                  label: const Text('Sicherung wiederherstellen oder Liste einlesen'),
+                ),
+              ],
+            ],
           ),
         ),
       );

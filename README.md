@@ -55,6 +55,11 @@ gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Ble
 gespeichert und lässt sich **sichern**: eine CSV für Excel und eine JSON-Datei, die sich
 verlustfrei wieder einlesen lässt.
 
+**Listen einlesen** — Sicherungsdatei, eigener CSV-Export, Deckliste (`4xOP01-001 …`), eine
+Nummer je Zeile oder ein Cardmarket-Bestandsexport. Das Format wird selbst erkannt, schief
+geschriebene Nummern (`OP1-1`, `OPO1-001`) werden korrigiert, und vor dem Übernehmen zeigt eine
+Vorschau, was erkannt wurde und was nicht. Ein Fehlgriff lässt sich rückgängig machen.
+
 **Decks** — Turnierdecks aus allen Sets (OP01–OP17), englisches und japanisches Format: rund 4.900
 Listen aus 1.864 Archetypen. Für jedes Deck ein Balken, wie viele Karten davon du besitzt; in der
 Deckliste steht je Karte „2/4" — was du hast und was das Deck braucht.
@@ -88,7 +93,7 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 79 Tests, laufen ohne Gerät
+flutter test                        # 148 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```

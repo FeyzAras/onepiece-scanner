@@ -90,7 +90,29 @@ class CardMatcher {
 
   CardMatcher(this.cards)
       : _byId = {for (final c in cards) c.id.toUpperCase(): c},
-        _byBaseId = _groupByBase(cards);
+        _byBaseId = _groupByBase(cards),
+        _byProductId = _groupByProduct(cards);
+
+  /// Cardmarkets Produktnummer -> Karte. Nur eindeutige Zuordnungen.
+  ///
+  /// Bei Karten, zu denen es nur ein Cardmarket-Produkt gibt, tragen normales
+  /// Artwork und Alt-Art dieselbe Produktnummer. Solche Faelle landen hier nicht,
+  /// weil die Nummer dann nicht verraet, welche Variante gemeint ist.
+  final Map<int, OpCard> _byProductId;
+
+  static Map<int, OpCard> _groupByProduct(List<OpCard> cards) {
+    final zaehler = <int, List<OpCard>>{};
+    for (final c in cards) {
+      final id = c.price?.idProduct;
+      if (id != null) zaehler.putIfAbsent(id, () => []).add(c);
+    }
+    return {
+      for (final e in zaehler.entries)
+        if (e.value.length == 1) e.key: e.value.single,
+    };
+  }
+
+  OpCard? byProductId(int idProduct) => _byProductId[idProduct];
 
   static Map<String, List<OpCard>> _groupByBase(List<OpCard> cards) {
     final map = <String, List<OpCard>>{};
@@ -150,6 +172,16 @@ class CardMatcher {
     }
     return (card: variants.first, pick: ArtworkPick.fallback);
   }
+
+  /// Sucht in beliebigem Text eine Kartennummer und gibt die Basis-ID zurueck.
+  ///
+  /// Bewusst oeffentlich: Der Import braucht genau dieselbe Toleranz wie die
+  /// Texterkennung - `OPO1-OO1`, `op01 001`, `OP1-1`. Eine zweite Zahlenlogik
+  /// daneben waere eine zweite Wahrheit, die irgendwann auseinanderlaeuft.
+  ///
+  /// Entscheidend: Akzeptiert wird nur, was einer **real existierenden** Karten-ID
+  /// entspricht. Dadurch sind Falschtreffer praktisch ausgeschlossen.
+  String? findNumber(String text) => _findNumber(text);
 
   String? _findNumber(String text) {
     for (final m in _candidateRe.allMatches(text)) {

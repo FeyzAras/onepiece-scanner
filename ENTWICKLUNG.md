@@ -13,7 +13,7 @@ in [README.md](README.md).
 # Android-App bauen
 cd android_app
 flutter pub get
-flutter test                                  # 79 Tests, laufen ohne Gerät
+flutter test                                  # 148 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi   # -> build/app/outputs/flutter-apk/
 
 # Daten aktualisieren
@@ -57,14 +57,17 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     image_hash.dart     Bild-Fingerabdruck (dHash) aus dem Kamerabild
     card_model.dart     Kartendaten und Preis-Datenmodell
     collection_view.dart Sammlung: Raster, Suche, Sortierung, Kartendetails
-    collection_store.dart Dauerhafte Speicherung (Ordner, Scans, Preiswahl)
-    collection_export.dart CSV-Export
+    collection_store.dart Dauerhafte Speicherung (Ordner, Scans, Preiswahl, Sicherung)
+    collection_export.dart CSV-Export und JSON-Sicherung
+    collection_import.dart Listen einlesen — Formaterkennung und Zuordnung, ohne UI
+    import_view.dart    Import-Blatt: Quelle, Vorschau, Zielordner, Einfügemodus
+    csv_reader.dart     CSV zerlegen (Quoting, Trennzeichen, Kodierung)
     decks_view.dart     Deck-Tab mit Sammlungsabgleich
     deck_model.dart     Decklisten einlesen und nachladen
     price_store.dart    Tagesaktuelle Preise nachladen
     widgets.dart        Gemeinsame Bausteine und Farben
   assets/             cards.json, decks.json (in die App eingebacken)
-  test/               79 Tests, laufen ohne Gerät
+  test/               148 Tests, laufen ohne Gerät
 
 scripts/              Datenpflege (Node, läuft nur beim Entwickeln/in CI)
 docs/                 Web-Version (PWA) + die Datendateien, die die App nachlädt
@@ -158,6 +161,31 @@ Zuordnung wird zufällig.
 Liegt der Abstand zwischen den Kandidaten unter `kArtworkDecisionMargin` (4 Bit), gilt die
 Entscheidung als unsicher und es wird die Standardversion genommen. Der Nutzer kann in den
 Kartendetails umschalten.
+
+### Der Import benutzt dieselbe Nummernerkennung
+
+`collection_import.dart` löst Nummern in zwei Stufen auf: erst normalisiert (`OP1-1` → `OP01-001`),
+dann über `CardMatcher.findNumber` — dieselbe Funktion, die auch die Kamera benutzt. Sie fängt
+`OPO1-001` ab, weil sie Präfixe mit Hamming-Abstand 1 prüft und `O`/`0` sowie `I`/`1` tauscht.
+
+**Wichtig und leicht zu übersehen:** Die Toleranz greift nur im **Präfix**. Der dreistellige
+Zahlenteil muss stimmen — `OPO1-OO1` wird *nicht* gefunden. Grund ist `_candidateRe`, das dort
+`\d{3}` verlangt. Das ist bewusst so: Akzeptiert wird ausschließlich, was einer real existierenden
+Karten-ID entspricht, und je mehr Toleranz im Zahlenteil, desto eher trifft man die falsche Karte.
+
+Drei Entscheidungen, die beim Import bewusst so getroffen wurden:
+
+| Entscheidung | Begründung |
+| --- | --- |
+| **Eigener CSV-Leser** statt eines Pakets | Rund hundert Zeilen, vollständig testbar. Das Projekt kommt auch sonst ohne Zusatzpakete aus, wo es sich vermeiden lässt (Netzzugriffe über nacktes `HttpClient` statt `http`) |
+| **`file_selector` statt `file_picker`** | Von flutter.dev gepflegt, macht nur „eine Datei öffnen". R8 ist in diesem Projekt abgeschaltet, weil ML Kit sonst stirbt — jede weitere native Abhängigkeit ist in dieser Lage ein Risiko, das sich erst auf dem Gerät zeigt |
+| **Datei-Auswahl ohne Typfilter** | Android graut Dateien aus, deren MIME-Typ nicht im Filter steht. Eine über Chrome geladene CSV kommt oft als `application/octet-stream` an, eine aus WhatsApp als `application/vnd.ms-excel`. Geprüft wird deshalb der **Inhalt**, nicht der angebliche Typ |
+
+`Deck.parseCardList` (`deck_model.dart`) wird **nicht** wiederverwendet. Sie ist für ein maschinell
+erzeugtes Format gebaut (`indexOf('x')`, Trennung nur am Leerzeichen) und scheitert an
+`4x OP01-001`, `OP01-001 x3` und am Unicode-`×`. Sie hat eigene Tests und bedient die Deck-Pipeline —
+anfassen bringt Risiko ohne Gewinn. Ein Test sichert ab, dass beide Parser auf der strengen Form
+`NxID` dasselbe liefern.
 
 ---
 

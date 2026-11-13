@@ -137,6 +137,44 @@ Ordner-Filter aktiv ist. Darauf weist die App dann eigens hin.
 > genügt nicht — schick sie dir wirklich zu, in Google Drive, in die Downloads oder per Mail an
 > dich selbst. Sonst sind sie bei einer Deinstallation mit weg.
 
+### Liste einlesen
+
+Das Symbol daneben (Pfeil nach unten) liest Karten **in** die Sammlung. Es ist immer da, auch
+wenn die Sammlung leer ist — genau dann braucht man es nämlich.
+
+Vier Arten von Listen werden erkannt, ohne dass du etwas einstellen musst:
+
+| Was | Beispiel |
+| --- | --- |
+| **Sicherungsdatei** | die `.json` aus deiner eigenen Sicherung — stellt alles wieder her, samt Ordnern und Preisauswahl |
+| **Eigene CSV** | die `.csv` aus deiner Sicherung |
+| **Deckliste** | `4xOP01-001 2xST01-002 …` — das Format, das Deck-Seiten und Simulatoren ausgeben |
+| **Nummernliste** | eine Nummer je Zeile. `OP01-001`, `OP01-001 x3`, `3 OP01-001` und `4x OP01-001` gehen alle |
+| **Cardmarket-Export** | die Bestandsdatei aus deinem Cardmarket-Konto |
+
+Zwei Wege hinein: **Datei auswählen** oder **Text einfügen** (für Decklisten aus der Zwischenablage).
+
+**Vor dem Übernehmen kommt immer eine Vorschau** mit:
+
+- wie viele Karten erkannt wurden und was sie wert sind
+- welche Nummern über eine Korrektur gefunden wurden (`OP1-1` → `OP01-001`)
+- welche Zeilen **nicht** zugeordnet werden konnten — aufklappbar, nichts verschwindet stillschweigend
+- wohin die Karten sollen: aktueller Ordner, neuer Ordner, oder die Ordner aus der Datei
+- wie gerechnet wird:
+
+| | Was passiert |
+| --- | --- |
+| **Dazuzählen** | Alles kommt obendrauf. Der Normalfall. |
+| **Auf Anzahl auffüllen** | Ergänzt nur, was noch fehlt — für Listen, die du schon halb gescannt hast |
+| **Ersetzen** | Zielordner leeren und neu befüllen. Bei einer Sicherungsdatei die vollständige Wiederherstellung |
+
+Falls doch etwas schiefgeht: Direkt nach dem Import steht **Rückgängig** in der Meldung, und
+solange kein zweiter Import hinterherkommt, auch dauerhaft unten im Import-Fenster.
+
+**Was aus Cardmarket nicht mitkommt:** Zustand, Sprache, Folierung und deine eigenen
+Verkaufspreise — dafür hat die App kein Feld. Die Karten selbst werden über die Produktnummer
+zugeordnet und treffen damit genau die richtige Druckvariante.
+
 ### Japanische Karten
 
 Japanische Karten funktionieren ohne Zusatzschritt — die Kartennummer ist auch dort in

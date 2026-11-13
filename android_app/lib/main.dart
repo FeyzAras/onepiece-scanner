@@ -5,10 +5,12 @@ import 'package:flutter/services.dart';
 
 import 'card_matcher.dart';
 import 'card_model.dart';
+import 'collection_import.dart';
 import 'collection_store.dart';
 import 'collection_view.dart';
 import 'deck_model.dart';
 import 'decks_view.dart';
+import 'import_view.dart';
 import 'price_store.dart';
 import 'scanner_view.dart';
 import 'widgets.dart';
@@ -256,6 +258,179 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ------------------------------------------------------------------- Import
+
+  Future<void> _import() async {
+    final matcher = _matcher;
+    if (matcher == null) return;
+
+    final sicherungVom = await CollectionStore.backupTime();
+    if (!mounted) return;
+
+    final plan = await showImportSheet(
+      context,
+      matcher: matcher,
+      folders: _folders,
+      activeFolderId: _activeFolderId,
+      priceOf: _priceOf,
+      sicherungVom: sicherungVom,
+      onRueckgaengig: () async {
+        if (await CollectionStore.restoreBackup()) {
+          await _load();
+          _melden('Der letzte Import wurde rückgängig gemacht.');
+        }
+      },
+    );
+    if (plan == null) return;
+    await _importAnwenden(plan);
+  }
+
+  /// Schreibt einen bestaetigten Import in die Sammlung.
+  ///
+  /// Vorher wird immer der bisherige Stand gesichert - ein Fehlgriff ist damit
+  /// umkehrbar, solange kein zweiter Import hinterherkommt.
+  Future<void> _importAnwenden(ImportPlan plan) async {
+    final r = plan.result;
+
+    // Vollstaendige Wiederherstellung: der gespeicherte Zustand wird woertlich
+    // zurueckgeschrieben, samt Ordnern, Preisauswahl und unbekannten Eintraegen.
+    if (r.format == ImportFormat.sicherung &&
+        plan.modus == ImportMode.ersetzen &&
+        r.sicherungRoh != null) {
+      final ok = await CollectionStore.importRaw(r.sicherungRoh!);
+      if (!ok) {
+        _melden('Die Sicherung ließ sich nicht einspielen — es wurde nichts verändert.');
+        return;
+      }
+      await _load();
+      _melden('Sammlung wiederhergestellt: ${r.kartenAnzahl} Karten.', rueckgaengig: true);
+      return;
+    }
+
+    await CollectionStore.backupNow();
+
+    final folders = [..._folders];
+    var naechsteId = DateTime.now().millisecondsSinceEpoch;
+    String neueOrdnerId() => '${naechsteId++}';
+
+    // Zielordner bestimmen
+    String? festesZiel;
+    if (plan.ziel == ImportZiel.aktiverOrdner) {
+      festesZiel = plan.ordnerId ?? _activeFolderId;
+    } else if (plan.ziel == ImportZiel.neuerOrdner) {
+      final name = (plan.neuerName ?? '').trim();
+      final vorhanden = folders.where((f) => f.name.toLowerCase() == name.toLowerCase());
+      if (vorhanden.isNotEmpty) {
+        festesZiel = vorhanden.first.id;
+      } else {
+        festesZiel = neueOrdnerId();
+        folders.add(ScanFolder(id: festesZiel, name: name.isEmpty ? 'Import' : name));
+      }
+    }
+
+    /// Ordner einer Zeile - bei "aus der Datei" ueber ID, sonst ueber den Namen.
+    String ordnerFuer(ImportRow z) {
+      if (festesZiel != null) return festesZiel;
+      final id = z.ordnerId;
+      if (id != null && folders.any((f) => f.id == id)) return id;
+      final name = z.ordnerName?.trim();
+      if (name != null && name.isNotEmpty) {
+        final treffer = folders.where((f) => f.name.toLowerCase() == name.toLowerCase());
+        if (treffer.isNotEmpty) return treffer.first.id;
+        final neu = id ?? neueOrdnerId();
+        folders.add(ScanFolder(id: neu, name: name));
+        return neu;
+      }
+      return _activeFolderId;
+    }
+
+    // Was soll am Ende wo liegen
+    final zuSchreiben = <({OpCard card, String folder, int anzahl})>[];
+    final zielOrdner = <String>{};
+    for (final z in r.treffer) {
+      final ordner = ordnerFuer(z);
+      zielOrdner.add(ordner);
+      zuSchreiben.add((card: z.card!, folder: ordner, anzahl: z.anzahl));
+    }
+
+    final neu = [..._collection];
+
+    if (plan.modus == ImportMode.ersetzen) {
+      neu.removeWhere((e) => zielOrdner.contains(e.folderId));
+    }
+
+    // Bestand je (Karte, Ordner) - fuer "auffuellen"
+    final bestand = <String, int>{};
+    for (final e in neu) {
+      final k = '${e.card.id}\u0000${e.folderId}';
+      bestand[k] = (bestand[k] ?? 0) + 1;
+    }
+
+    final jetzt = DateTime.now();
+    var geschrieben = 0;
+    var gekappt = false;
+
+    for (final s in zuSchreiben) {
+      final k = '${s.card.id}\u0000${s.folder}';
+      var wieviele = s.anzahl;
+      if (plan.modus == ImportMode.auffuellen) {
+        wieviele = s.anzahl - (bestand[k] ?? 0);
+        if (wieviele <= 0) continue;
+      }
+      for (var i = 0; i < wieviele; i++) {
+        if (geschrieben >= CollectionImport.maxGesamt) {
+          gekappt = true;
+          break;
+        }
+        neu.add(CollectionEntry(card: s.card, folderId: s.folder, how: 'import', at: jetzt));
+        geschrieben++;
+      }
+      bestand[k] = (bestand[k] ?? 0) + wieviele;
+      if (gekappt) break;
+    }
+
+    // Neueste zuerst, wie es die Sammlung auch sonst haelt
+    neu.sort((a, b) => b.at.compareTo(a.at));
+
+    setState(() {
+      _folders = folders;
+      _collection
+        ..clear()
+        ..addAll(neu);
+      if (festesZiel != null && folders.any((f) => f.id == festesZiel)) {
+        _activeFolderId = festesZiel;
+      }
+    });
+    await _persist();
+
+    final nichtZugeordnet = r.fehler.length;
+    _melden(
+      '$geschrieben Karten übernommen'
+      '${nichtZugeordnet > 0 ? ', $nichtZugeordnet Zeilen nicht zugeordnet' : ''}'
+      '${gekappt ? ' (bei ${CollectionImport.maxGesamt} abgebrochen)' : ''}.',
+      rueckgaengig: true,
+    );
+  }
+
+  void _melden(String text, {bool rueckgaengig = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(text),
+      duration: Duration(seconds: rueckgaengig ? 8 : 4),
+      action: rueckgaengig
+          ? SnackBarAction(
+              label: 'Rückgängig',
+              onPressed: () async {
+                if (await CollectionStore.restoreBackup()) {
+                  await _load();
+                  _melden('Der Import wurde rückgängig gemacht.');
+                }
+              },
+            )
+          : null,
+    ));
+  }
+
   int _ownedCount(String baseId) => _collection
       .where((e) => e.card.baseId.toUpperCase() == baseId.toUpperCase())
       .length;
@@ -407,6 +582,7 @@ class _HomePageState extends State<HomePage> {
             onSwitchArtwork: _switchArtwork,
             variantsOf: (card) => _matcher?.variantsOf(card) ?? [card],
             onManageFolders: _manageFolders,
+            onImport: _import,
             priceOf: _priceOf,
             optionsFor: _optionsFor,
             choiceOf: (card) => _priceChoice[card.id],

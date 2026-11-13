@@ -38,6 +38,13 @@ class CardPrice {
   final String asOf;
   final PriceConfidence confidence;
 
+  /// Cardmarkets Produktnummer der zugeordneten Druckvariante.
+  ///
+  /// Wird fuer den Import eines Cardmarket-Bestandsexports gebraucht: Dessen
+  /// Spalte `idProduct` trifft darueber exakt die richtige Karte, inklusive der
+  /// Unterscheidung von normalem Artwork und Alt-Art.
+  final int? idProduct;
+
   const CardPrice({
     required this.amount,
     required this.currency,
@@ -45,6 +52,7 @@ class CardPrice {
     required this.source,
     required this.asOf,
     this.confidence = PriceConfidence.unsicher,
+    this.idProduct,
   });
 
   bool get isReal => source == 'cardmarket';
@@ -65,6 +73,7 @@ class CardPrice {
         source: source,
         asOf: asOf,
         confidence: confidence,
+        idProduct: idProduct,
       );
 
   static CardPrice? fromJson(Map<String, dynamic>? j) {
@@ -78,6 +87,7 @@ class CardPrice {
       source: (j['source'] ?? 'cardmarket') as String,
       asOf: (j['asOf'] ?? '') as String,
       confidence: PriceConfidence.parse(j['confidence'] as String?),
+      idProduct: (j['idProduct'] as num?)?.toInt(),
     );
   }
 }
