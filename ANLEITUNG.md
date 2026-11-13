@@ -2,18 +2,24 @@
 
 ## 1. App installieren (Android)
 
-1. Auf dem Handy die **Releases-Seite** öffnen — dort steht immer die neueste Version:
-   **https://github.com/FeyzAras/onepiece-scanner/releases/latest**
-2. Unter **Assets** die Datei **`onepiece-scanner-arm64.apk`** antippen. Chrome fragt nach, ob die
-   Datei heruntergeladen werden darf → **bestätigen**.
-3. Die heruntergeladene Datei öffnen (Benachrichtigung antippen oder in „Downloads").
-4. Android fragt: *„Aus dieser Quelle dürfen keine unbekannten Apps installiert werden"* →
-   **Einstellungen** antippen → **„Aus dieser Quelle zulassen"** aktivieren → zurück → **Installieren**.
-5. Play Protect warnt eventuell vor einem unbekannten Entwickler → **Trotzdem installieren**.
-6. Beim ersten Start fragt die App nach der **Kamera-Berechtigung** → **Zulassen**.
+### ⬇️ [**onepiece-scanner-arm64.apk herunterladen**](https://github.com/FeyzAras/onepiece-scanner/releases/latest/download/onepiece-scanner-arm64.apk)
 
-> `arm64` ist die richtige Variante für aktuelle Handys, auch für das Samsung S24. Eine neue
-> Version lässt sich einfach über die alte installieren — die Sammlung bleibt erhalten.
+1. Den Link oben **auf dem Handy** antippen. Er zeigt immer auf die neueste Fassung — kein Umweg
+   über die Release-Seite, kein Suchen unter „Assets". Chrome fragt, ob die Datei heruntergeladen
+   werden darf → **bestätigen**.
+2. Die heruntergeladene Datei öffnen (Benachrichtigung antippen oder in „Downloads").
+3. Android fragt: *„Aus dieser Quelle dürfen keine unbekannten Apps installiert werden"* →
+   **Einstellungen** antippen → **„Aus dieser Quelle zulassen"** aktivieren → zurück → **Installieren**.
+4. Play Protect warnt eventuell vor einem unbekannten Entwickler → **Trotzdem installieren**.
+5. Beim ersten Start fragt die App nach der **Kamera-Berechtigung** → **Zulassen**.
+
+> `arm64` ist die richtige Variante für aktuelle Handys, auch für das Samsung S24.
+>
+> **Eine neue Version legt sich einfach über die alte — die Sammlung bleibt erhalten.**
+> Vorher deinstallieren würde sie löschen; das ist nicht nötig.
+
+Alle Fassungen samt Änderungsnotizen:
+[github.com/FeyzAras/onepiece-scanner/releases](https://github.com/FeyzAras/onepiece-scanner/releases)
 
 > Die App ist mit einem Entwickler-Schlüssel signiert, nicht über den Play Store verteilt. Deshalb
 > die Rückfrage von Android — das ist normal bei selbst gebauten Apps.

@@ -5,31 +5,23 @@ Cardmarket-Preis in deiner Sammlung. Kein Knopfdruck pro Karte.
 
 ---
 
-## 📲 App herunterladen
+## 📲 Aufs Handy laden
 
-**[→ Neueste Version für Android herunterladen (APK)](https://github.com/FeyzAras/onepiece-scanner/releases/latest)**
+### ⬇️ [**onepiece-scanner-arm64.apk herunterladen**](https://github.com/FeyzAras/onepiece-scanner/releases/latest/download/onepiece-scanner-arm64.apk)
 
-Den Link **auf dem Handy** öffnen und die Datei `onepiece-scanner-arm64.apk` antippen.
+Diesen Link am **Handy** antippen — er zeigt immer auf die neueste Fassung, ohne Umweg über
+die Release-Seite. Eine Datei für aktuelle Android-Geräte (arm64, auch Samsung S24), rund 37 MB.
 
-<details>
-<summary><b>Installation Schritt für Schritt</b> (aufklappen)</summary>
+Beim allerersten Mal fragt Android nach der Erlaubnis, Apps aus dieser Quelle zu installieren
+→ erlauben, zurück, installieren. Play Protect meldet „unbekannter Entwickler"
+→ *Trotzdem installieren*. Danach genügt Antippen.
 
-1. Link oben auf dem Handy öffnen → unter **Assets** auf `onepiece-scanner-arm64.apk` tippen
-2. Chrome fragt, ob die Datei heruntergeladen werden darf → **Herunterladen** bestätigen
-3. Heruntergeladene Datei öffnen (Benachrichtigung antippen oder in „Downloads")
-4. Android meldet *„Aus dieser Quelle dürfen keine unbekannten Apps installiert werden"* →
-   **Einstellungen** → **„Aus dieser Quelle zulassen"** → zurück → **Installieren**
-5. Play Protect warnt eventuell vor unbekanntem Entwickler → **Trotzdem installieren**
-6. Beim ersten Start: **Kamera-Berechtigung zulassen**
+> **Updates legen sich über die alte Fassung — die Sammlung bleibt erhalten.**
+> Nicht vorher deinstallieren, das würde sie löschen.
 
-Schritt 4 und 5 sind normal bei Apps, die nicht über den Play Store kommen.
-
-Es gibt drei APK-Varianten. Für aktuelle Handys (auch Samsung S24) ist **`arm64`** die richtige;
-`armeabi-v7a` ist für ältere Geräte, `x86_64` für Emulatoren.
-</details>
-
-**Ausführliche Bedienungsanleitung: [ANLEITUNG.md](ANLEITUNG.md)**
-**Für Entwickler — wie alles funktioniert und warum: [ENTWICKLUNG.md](ENTWICKLUNG.md)**
+Alle Fassungen: [Releases](https://github.com/FeyzAras/onepiece-scanner/releases) ·
+Bedienung: [ANLEITUNG.md](ANLEITUNG.md) ·
+Für Entwickler: [ENTWICKLUNG.md](ENTWICKLUNG.md)
 
 Es gibt die App auch als **Web-Version** zum Ausprobieren ohne Installation:
 **[feyzaras.github.io/onepiece-scanner](https://feyzaras.github.io/onepiece-scanner/)** —
