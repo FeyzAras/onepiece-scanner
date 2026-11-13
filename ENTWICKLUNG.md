@@ -222,11 +222,59 @@ access to the Cardmarket API."* Im Juli 2025 wurde erklärt, die öffentlichen E
 **ersetzen** die Pläne zur Ausweitung des API-Zugangs. Es gibt ein Partnerprogramm (TCG PowerTools,
 Scryfall), aber keinen veröffentlichten Bewerbungsweg.
 
+### Preis-APIs anderer Anbieter (Marktüberblick, geprüft am 2026-11-13)
+
+Die Frage „gibt es statt der Export-Dateien eine API?" wurde einmal gründlich durchgesehen. Ergebnis
+in Kurzform: **Für den europäischen Markt in Euro gibt es nichts Besseres als die Cardmarket-Exporte.**
+Jeder Anbieter, der EUR-Preise verspricht, gibt genau diese Daten weiter — gegen Geld und mit
+ungeklärter Lizenz.
+
+| Anbieter | Markt / Währung | Urteil |
+| --- | --- | --- |
+| **CardTrader** (`api.cardtrader.com/api/v2`) | EU / **EUR** | **Einziger echter Kandidat**, siehe unten |
+| **tcgcsv.com** | USA / USD | Brauchbar als kostenlose Zweitmeinung, siehe unten |
+| Scrydex | USA / USD | Ab 29 $/Monat. One Piece ist *Beta*, Preisquelle für One Piece nicht genannt. AGB verbieten „mirror, or commercially exploit" — unser Pipeline-Prinzip (Daten ins öffentliche Repo spiegeln) wäre damit ausgeschlossen |
+| BerryWallet / PokéWallet | USD **und EUR** | Liefert erklärtermaßen Cardmarket-Werte (`avg`, `low`, `trend`, `avg1/7/30` — dieselben Felder wie unsere Exporte) für 20 €/Monat. Nirgends steht, woher diese Cardmarket-Daten stammen oder ob die Weitergabe lizenziert ist. Bezahlen für Daten, die wir offiziell und kostenlos bekommen |
+| apitcg.com | USD | Doku-Route liefert 404, kein Betreiber erkennbar, One-Piece-Preise nicht belegt. Nicht verwertbar |
+| optcgapi.com | nicht angegeben | Kostenloses Ein-Personen-Hobbyprojekt, keine Auth. Währung, Preisquelle und Feldnamen sind nirgends dokumentiert, letzter Update-Eintrag März 2026. Höchstens als Kartendaten-Reserve |
+
+**CardTrader** ist deshalb interessant, weil die API **Angebotsebene** liefert und damit genau das
+aufmacht, was bei Cardmarket verschlossen ist (siehe nächster Abschnitt):
+`GET /marketplace/products?expansion_id=…` gibt je Blueprint die 25 günstigsten Angebote mit
+`price.cents` + `price.currency` (EUR), `properties_hash.condition`, Sprache, `quantity` und
+`user.country_code`. Auth per `Authorization: Bearer <token>`, Limits 200 Anfragen/10 s allgemein,
+10/s auf den Marktplatz.
+
+Drei Dinge vor einem Einbau klären:
+1. **Kommt man überhaupt an einen Token?** Die offizielle Doku (`cardtrader.com/en/docs/api/full`)
+   antwortet automatisierten Abrufen mit HTTP 403 und war nicht lesbar. Sie sagt laut Suchtreffern
+   „obtain the auth token inside the settings page on your CardTrader profile"; mehrere
+   Drittanbieter-Integrationen behaupten dagegen, es brauche ein aktives Verkäuferkonto mit
+   bestimmtem Plan. **Ungeklärt — im eingeloggten Profil nachsehen.**
+2. **Anderer Markt.** CardTrader ist deutlich kleiner als Cardmarket. Bei Nischenkarten können ein,
+   zwei Angebote den „Preis" bestimmen. Es ersetzt Cardmarket nicht, es ergänzt es.
+3. **Nur günstigste Angebote, keine Historie.** Aus 25 Angeboten lässt sich ein „ab X €" bilden,
+   kein Trend und kein Durchschnitt. `price_cents` taucht nur beim CSV-Import auf, in der
+   Marktplatz-Antwort ist der Preis ein Objekt.
+
+**tcgcsv.com** ist geprüft und passt technisch perfekt zu unserer Pipeline (täglicher Abruf per
+Action, App lädt fertige JSON): Kategorie **68** = One Piece Card Game, Abruf über
+`https://tcgcsv.com/tcgplayer/68/{groupId}/prices`, Felder `lowPrice`, `midPrice`, `highPrice`,
+`marketPrice`, `directLowPrice`, `subTypeName`, Aktualisierung täglich gegen 20:00 UTC, Archiv
+zurück bis 2024-02-08. Zur Erlaubnis sagt die FAQ wörtlich: *„How do I get permission to use
+TCGCSV? You don't. Permission is implicit."* Auflagen: höchstens ein Sync pro Tag, vorher
+`last-updated.txt` prüfen, eigener `User-Agent`, keine Abrufe direkt aus der App heraus, unter
+10.000 Anfragen/24 h. **Aber: US-Markt in Dollar.** Für einen deutschen Sammler ist das eine
+Zweitmeinung, kein Ersatz.
+
 ### Preise nach Verkäuferland oder Kartensprache
 
 Nicht möglich. Die Export-Dateien enthalten nur europaweite Aggregate (`avg`, `low`, `trend`,
 `avg1`, `avg7`, `avg30`, jeweils auch für Foil). Verkäuferland, Sprache und Zustand existieren bei
 Cardmarket nur auf **Angebotsebene** — erreichbar nur über die API oder die Website.
+
+> Teilweise entschärft: Über die CardTrader-API (oben) wären Zustand, Sprache und Verkäuferland
+> erreichbar — allerdings für CardTrader-Angebote, nicht für Cardmarket-Angebote.
 
 ### cardmarket.com auslesen
 
