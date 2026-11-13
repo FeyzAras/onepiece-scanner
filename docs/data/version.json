@@ -1,0 +1,19 @@
+{
+    "version":  "0.8.0",
+    "versionCode":  2800,
+    "released":  "2026-11-13",
+    "minSdk":  24,
+    "abi":  "arm64-v8a",
+    "apk":  {
+                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.8.0/onepiece-scanner-arm64.apk",
+                "bytes":  39161921,
+                "sha256":  "4dc77020f5020b44579cf92fec2b7c2f3c6740f53aa34fc89b8f42ba8cbcd4be"
+            },
+    "notes":  [
+                  "Sammlung sichern erzeugt jetzt zwei Dateien: eine CSV fuer Excel und eine JSON-Sicherung zum verlustfreien Wiedereinlesen",
+                  "Listen einlesen: eigene Sicherung, CSV, Deckliste, Nummernliste oder Cardmarket-Export",
+                  "Drei stille Datenverluste behoben - unter anderem sicherte der Export bei aktivem Filter nur die sichtbaren Karten",
+                  "Deck-Tab funktioniert jetzt auch ohne Netzverbindung"
+              ],
+    "mandatory":  false
+}

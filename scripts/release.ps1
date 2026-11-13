@@ -100,8 +100,18 @@ Write-Host "  Fingerabdruck stimmt." -ForegroundColor Green
 # --- 5. Release anlegen ---------------------------------------------------------------
 Schritt '5/7  Release anlegen'
 
+# Die Datei muss VOR dem Hochladen den richtigen Namen tragen.
+#
+# Nicht ueber die #-Angabe von gh loesbar: Die setzt nur das Anzeige-Etikett, der
+# Dateiname im Release bleibt der urspruengliche. Genau daran ist das Release v0.8.0
+# zuerst gescheitert - die Datei hing als app-arm64-v8a-release.apk dran, und damit
+# ging der Dauerlink /releases/latest/download/onepiece-scanner-arm64.apk ins Leere.
+$Hochzuladen = Join-Path ([System.IO.Path]::GetTempPath()) $AssetName
+Copy-Item $Apk $Hochzuladen -Force
+Write-Host "  benannt als: $AssetName"
+
 $titel = "v$Version"
-$argumente = @("release", "create", "v$Version", "$Apk#$AssetName", "--repo", $Repo, "--title", $titel)
+$argumente = @("release", "create", "v$Version", $Hochzuladen, "--repo", $Repo, "--title", $titel)
 if ($NotesFile) { $argumente += @("--notes-file", $NotesFile) } else { $argumente += @("--generate-notes") }
 
 & gh @argumente
