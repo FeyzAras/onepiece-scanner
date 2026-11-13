@@ -275,6 +275,28 @@ void main() {
       const text = 'Kartennummer;Name\nOP01-001;Zoro\n';
       expect(lies(text).treffer.single.anzahl, 1);
     });
+
+    test('auch die alte CSV aus v0.7.0 wird gelesen', () {
+      // Wichtig fuer den Umstieg: Wer vor dem Update noch mit der alten Fassung
+      // exportiert hat, muss diese Datei notfalls wieder einlesen koennen. Ihr
+      // fehlen die technischen Spalten Ordner-ID und Preiswahl.
+      const alt = '# One Piece Scanner – Sammlung, Preise nach Cardmarket, Stand 2026-11-12\n'
+          'Kartennummer;Name;Set;Seltenheit;Kartentyp;Farbe;Anzahl;Einzelpreis;'
+          'Gesamtpreis;Ordner;Erkannt über;Zuletzt gescannt\n'
+          'OP01-001;Roronoa Zoro;OP01;L;Leader;Red;3;1,87;5,61;Meine Sammlung;Nummer;12.11.2026\n'
+          'ST01-002;Starter Karte;ST01;C;Character;Red;1;0,15;0,15;Doppelte;Nummer + Name;12.11.2026\n';
+
+      final r = lies(alt);
+      expect(r.format, ImportFormat.eigeneCsv);
+      expect(r.kartenAnzahl, 4);
+      expect(r.fehler, isEmpty);
+
+      final zoro = r.treffer.firstWhere((z) => z.card!.id == 'OP01-001');
+      expect(zoro.anzahl, 3);
+      expect(zoro.ordnerName, 'Meine Sammlung');
+      expect(zoro.ordnerId, isNull, reason: 'die alte Datei hat keine Ordner-ID');
+      expect(zoro.preiswahl, isNull);
+    });
   });
 
   group('Cardmarket-Export', () {
