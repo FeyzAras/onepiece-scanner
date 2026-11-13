@@ -24,6 +24,29 @@ Alle Fassungen samt Änderungsnotizen:
 > Die App ist mit einem Entwickler-Schlüssel signiert, nicht über den Play Store verteilt. Deshalb
 > die Rückfrage von Android — das ist normal bei selbst gebauten Apps.
 
+### Aktualisieren — ab Version 0.9.0 aus der App heraus
+
+Die App sieht höchstens einmal am Tag selbst nach, ob es eine neue Version gibt. Ist eine da,
+erscheint unten über der Leiste ein Hinweis **„Version … ist da"**. Antippen zeigt, was neu ist.
+
+1. **Jetzt aktualisieren** antippen.
+2. **Nur beim allerersten Mal:** Android muss erlauben, dass diese App Updates installieren darf.
+   Die App führt dich hin → **„Aus dieser Quelle zulassen"** einschalten → zurück. Danach geht es
+   von selbst weiter.
+3. Die neue Version wird heruntergeladen, mit Fortschrittsanzeige. Abbrechen geht jederzeit.
+4. Android fragt **„Aktualisieren?"** → bestätigen. Die App schließt sich kurz und startet in der
+   neuen Version. **Die Sammlung bleibt erhalten.**
+
+Gezielt nachsehen: Sammlung → **⋮** oben rechts → **Nach Update suchen**. Dort steht auch die
+installierte Version.
+
+> ⚠️ **Falls die App meldet, dass Android das Update ablehnt: nicht deinstallieren.** Damit wäre
+> die Sammlung weg. Die bisherige Version läuft normal weiter. Im selben Dialog lässt sich die
+> Sammlung sofort sichern — danach den Fehler melden.
+
+Wer ein Update nicht will, tippt **„Diese Version überspringen"** — dann fragt die App erst bei der
+nächsten Version wieder.
+
 **Es gibt keine Internetpflicht:** Erkennung und Kartendaten liegen komplett in der App. Internet
 wird nur benutzt, um die Kartenbilder in der Liste nachzuladen.
 

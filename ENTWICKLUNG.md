@@ -13,7 +13,7 @@ in [README.md](README.md).
 # Android-App bauen
 cd android_app
 flutter pub get
-flutter test                                  # 148 Tests, laufen ohne Gerät
+flutter test                                  # 182 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi   # -> build/app/outputs/flutter-apk/
 
 # Daten aktualisieren
@@ -62,12 +62,17 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     collection_import.dart Listen einlesen — Formaterkennung und Zuordnung, ohne UI
     import_view.dart    Import-Blatt: Quelle, Vorschau, Zielordner, Einfügemodus
     csv_reader.dart     CSV zerlegen (Quoting, Trennzeichen, Kodierung)
+    update_service.dart Neue Version finden, herunterladen, prüfen
+    update_view.dart    Update-Hinweis, Update-Blatt, Warnung bei abgelehntem Update
+    app_installer.dart  Brücke zum Android-Installer (MethodChannel)
     decks_view.dart     Deck-Tab mit Sammlungsabgleich
     deck_model.dart     Decklisten einlesen und nachladen
     price_store.dart    Tagesaktuelle Preise nachladen
     widgets.dart        Gemeinsame Bausteine und Farben
   assets/             cards.json, decks.json (in die App eingebacken)
-  test/               148 Tests, laufen ohne Gerät
+  test/               182 Tests, laufen ohne Gerät
+  android/app/src/main/kotlin/…/InstallChannel.kt, InstallStatusReceiver.kt
+                      PackageInstaller-Sitzung für die Aktualisierung aus der App
 
 scripts/              Datenpflege (Node, läuft nur beim Entwickeln/in CI)
 docs/                 Web-Version (PWA) + die Datendateien, die die App nachlädt
@@ -449,6 +454,40 @@ der In-App-Aktualisierung sucht die App ihn.
 **Reihenfolge beachten, sobald `docs/data/version.json` existiert:** erst das Release samt APK
 anlegen und prüfen, dass die Adresse wirklich antwortet — **danach** die `version.json` schreiben.
 Andersherum bieten alle Geräte innerhalb von Minuten ein Update an, dessen Datei es noch nicht gibt.
+
+**Releases ausschließlich über `scripts/release.ps1`.** Das Skript prüft Version gegen pubspec,
+Schlüssel, Signatur-Fingerabdruck, benennt die APK **vor** dem Hochladen um und schreibt
+`version.json` erst, wenn die APK nachweislich erreichbar ist. Die `#name`-Angabe von `gh` setzt
+übrigens nur das Anzeige-Etikett, nicht den Dateinamen — daran ist v0.8.0 zuerst gescheitert.
+
+### Aktualisierung aus der App (seit v0.9.0)
+
+```
+docs/data/version.json  ──►  UpdateService.pruefen()      höchstens 1×/Tag, still bei Fehlern
+                              UpdateService.anbieten()     reine Entscheidung, testbar
+                              UpdateService.herunterladen() .part → Länge → SHA-256 → .apk
+                              AppInstaller.installieren()  ──►  InstallChannel.kt (PackageInstaller)
+                                                               ◄──  InstallStatusReceiver.kt
+```
+
+| Entscheidung | Begründung |
+| --- | --- |
+| Versionsvergleich über **versionName** | `--split-per-abi` addiert `1000 × ABI` auf den versionCode. Ein einziger Build ohne den Schalter, und jeder Vergleich über den Code kippt |
+| `version.json` im Repo statt GitHub-API | Dasselbe Muster wie Preise und Decks; die API hat 60 Anfragen/Stunde je IP, hinter Mobilfunk-NAT teilen sich viele Geräte eine IP |
+| **PackageInstaller-Sitzung** statt `ACTION_VIEW` | Kein FileProvider nötig — und vor allem erfährt die App, *warum* eine Installation scheitert. `ACTION_VIEW` meldet nur „App nicht installiert", und die naheliegende Reaktion darauf ist Deinstallieren. Genau das löscht die Sammlung |
+| Eigener Dialog bei `STATUS_FAILURE_CONFLICT` | Signatur oder Version passen nicht. Der Dialog sagt ausdrücklich **„nicht deinstallieren"** und bietet sofort die Sicherung an |
+| Download in `.part`-Datei | Erst nach Längen- und Prüfsummenprüfung bekommt sie ihren Namen. Eine halbe APK kann nie an den Installer gehen |
+| Vor der Installation `await _persist()` | Android beendet die App während der Installation; ein laufender Speichervorgang ginge verloren |
+| Keine Prozessorprüfung | Es gibt nur die arm64-Fassung. Läuft die App, kann das Gerät auch die nächste ausführen |
+| `mandatory` in `version.json` | Notausgang: Eine Pflicht-Aktualisierung lässt sich nicht überspringen — für den Fall, dass eine veröffentlichte Fassung Daten gefährdet |
+
+Die Download-Tests laufen gegen einen **echten lokalen Server** (`test/update_service_test.dart`):
+Umleitung wie bei GitHub, fehlende Längenangabe, Verbindungsabriss über einen rohen Socket,
+falsche Prüfsumme, Abbruch. Was sich nur am Gerät prüfen lässt: der Installationsdialog, die
+Berechtigung „Unbekannte Apps", der Neustart nach dem Update.
+
+**Wichtig für den Übergang:** v0.9.0 selbst musste noch von Hand installiert werden — v0.8.0 kennt
+den Updater nicht. Erst ab der darauffolgenden Version greift der Weg aus der App.
 
 ### Automatik auf GitHub
 

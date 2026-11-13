@@ -55,6 +55,12 @@ class CollectionView extends StatefulWidget {
   /// Oeffnet das Import-Blatt. Liegt in main.dart, weil nur dort der Bestand liegt.
   final VoidCallback onImport;
 
+  /// Sucht gezielt nach einer neuen App-Version.
+  final VoidCallback? onCheckUpdate;
+
+  /// Installierte Version, z.B. "0.9.0" - fuer die Anzeige im Menue.
+  final String appVersion;
+
   /// Geltender Einzelpreis einer Karte (automatisch zugeordnet oder vom Nutzer gewaehlt).
   final double Function(OpCard card) priceOf;
 
@@ -83,6 +89,8 @@ class CollectionView extends StatefulWidget {
     required this.variantsOf,
     required this.onManageFolders,
     required this.onImport,
+    this.onCheckUpdate,
+    this.appVersion = '',
     required this.priceOf,
     required this.optionsFor,
     required this.choiceOf,
@@ -265,6 +273,35 @@ class _CollectionViewState extends State<CollectionView> {
                 tooltip: 'Liste einlesen oder Sicherung wiederherstellen',
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.file_download_outlined, size: 20, color: kDim),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Mehr',
+                icon: const Icon(Icons.more_vert, size: 20, color: kDim),
+                color: kRow,
+                padding: EdgeInsets.zero,
+                onSelected: (wahl) {
+                  if (wahl == 'update') widget.onCheckUpdate?.call();
+                },
+                itemBuilder: (_) => [
+                  if (widget.onCheckUpdate != null)
+                    const PopupMenuItem(
+                      value: 'update',
+                      child: Row(
+                        children: [
+                          Icon(Icons.system_update, size: 18),
+                          SizedBox(width: 10),
+                          Text('Nach Update suchen'),
+                        ],
+                      ),
+                    ),
+                  PopupMenuItem(
+                    enabled: false,
+                    child: Text(
+                      widget.appVersion.isEmpty ? 'One Piece Scanner' : 'One Piece Scanner ${widget.appVersion}',
+                      style: const TextStyle(fontSize: 12, color: kDim),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

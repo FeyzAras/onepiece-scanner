@@ -1,10 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import 'app_installer.dart';
 import 'card_matcher.dart';
 import 'card_model.dart';
+import 'collection_export.dart';
 import 'collection_import.dart';
 import 'collection_store.dart';
 import 'collection_view.dart';
@@ -13,6 +17,8 @@ import 'decks_view.dart';
 import 'import_view.dart';
 import 'price_store.dart';
 import 'scanner_view.dart';
+import 'update_service.dart';
+import 'update_view.dart';
 import 'widgets.dart';
 
 Future<void> main() async {
@@ -82,7 +88,87 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _load();
+    // Update-Pruefung erst nach dem Laden und nie blockierend: Sie braucht Netz,
+    // und ohne Netz soll die App trotzdem sofort benutzbar sein.
+    _load().then((_) => _updateVorbereiten());
+  }
+
+  // ------------------------------------------------------------------- Update
+
+  /// Installierte Version, z.B. "0.9.0". Leer, solange unbekannt.
+  String _version = '';
+
+  /// Angebotenes Update, oder null.
+  UpdateInfo? _update;
+
+  /// Hinweis fuer diese Sitzung weggeklickt.
+  bool _updateHinweisAus = false;
+
+  Future<void> _updateVorbereiten() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _version = info.version);
+    } catch (_) {
+      // ohne eigene Version keine Pruefung
+    }
+    // Reste frueherer Downloads entfernen - nach einer erfolgreichen Installation
+    // startet die App neu und kann erst jetzt aufraeumen.
+    unawaited(updateOrdner().then(UpdateService.aufraeumen));
+    await _updatePruefen();
+  }
+
+  Future<void> _updatePruefen({bool manuell = false}) async {
+    if (_version.isEmpty) {
+      if (manuell) _melden('Die eigene Version ist unbekannt — Prüfung nicht möglich.');
+      return;
+    }
+    final ergebnis = await UpdateService.pruefen(
+      installierteVersion: _version,
+      androidVersion: await AppInstaller.androidVersion(),
+      manuell: manuell,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _update = ergebnis.angebot;
+      if (manuell) _updateHinweisAus = false;
+    });
+
+    if (!manuell) return;
+    final angebot = ergebnis.angebot;
+    if (angebot != null) {
+      await _updateZeigen(angebot);
+    } else if (ergebnis.fehler != null) {
+      _melden(ergebnis.fehler!);
+    } else {
+      _melden('Du hast die neueste Version ($_version).');
+    }
+  }
+
+  Future<void> _updateZeigen(UpdateInfo info) => showUpdateSheet(
+        context,
+        info: info,
+        installierteVersion: _version,
+        vorInstallation: _persist,
+        sicherungAnbieten: _sicherungTeilen,
+      );
+
+  /// Sichert die vollstaendige Sammlung - auch aus dem Update-Dialog heraus, falls
+  /// Android das Update ablehnt.
+  Future<void> _sicherungTeilen() async {
+    try {
+      await CollectionExport.share(
+        entries: _collection,
+        priceOf: _priceOf,
+        choiceOf: (card) => _priceChoice[card.id],
+        folderName: (id) => _folders
+            .firstWhere((f) => f.id == id, orElse: () => const ScanFolder(id: '', name: '—'))
+            .name,
+        priceAsOf: _priceAsOf,
+      );
+    } catch (e) {
+      _melden('Sicherung fehlgeschlagen: $e');
+    }
   }
 
   Future<void> _load() async {
@@ -564,38 +650,59 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final update = _update;
     return Scaffold(
-      body: IndexedStack(
-        index: _tab,
+      body: Stack(
         children: [
-          ScannerView(
-            matcher: _matcher,
-            activeFolderName: _activeFolder.name,
-            onScanned: _onScanned,
-            onPickFolder: _manageFolders,
+          IndexedStack(
+            index: _tab,
+            children: [
+              ScannerView(
+                matcher: _matcher,
+                activeFolderName: _activeFolder.name,
+                onScanned: _onScanned,
+                onPickFolder: _manageFolders,
+              ),
+              CollectionView(
+                entries: _collection,
+                folders: _folders,
+                loadFailed: _loadFailed,
+                onRemoveOne: _removeOne,
+                onSwitchArtwork: _switchArtwork,
+                variantsOf: (card) => _matcher?.variantsOf(card) ?? [card],
+                onManageFolders: _manageFolders,
+                onImport: _import,
+                onCheckUpdate: () => _updatePruefen(manuell: true),
+                appVersion: _version,
+                priceOf: _priceOf,
+                optionsFor: _optionsFor,
+                choiceOf: (card) => _priceChoice[card.id],
+                onChoosePrice: _choosePrice,
+                priceAsOf: _priceAsOf,
+              ),
+              DecksView(
+                data: _decks,
+                loading: _decksLoading,
+                ownedCount: _ownedCount,
+                cardOf: _cardOf,
+                onRefresh: _loadDecks,
+              ),
+            ],
           ),
-          CollectionView(
-            entries: _collection,
-            folders: _folders,
-            loadFailed: _loadFailed,
-            onRemoveOne: _removeOne,
-            onSwitchArtwork: _switchArtwork,
-            variantsOf: (card) => _matcher?.variantsOf(card) ?? [card],
-            onManageFolders: _manageFolders,
-            onImport: _import,
-            priceOf: _priceOf,
-            optionsFor: _optionsFor,
-            choiceOf: (card) => _priceChoice[card.id],
-            onChoosePrice: _choosePrice,
-            priceAsOf: _priceAsOf,
-          ),
-          DecksView(
-            data: _decks,
-            loading: _decksLoading,
-            ownedCount: _ownedCount,
-            cardOf: _cardOf,
-            onRefresh: _loadDecks,
-          ),
+          // Schwebt ueber der Navigationsleiste, nicht im Layoutfluss: Die Ansichten
+          // berechnen ihre Kopfzeilen selbst, ein eingeschobener Streifen wuerde sie
+          // verschieben und die Kamera stauchen.
+          if (update != null && !_updateHinweisAus)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 10,
+              child: UpdateBanner(
+                info: update,
+                onAnsehen: () => _updateZeigen(update),
+                onSchliessen: () => setState(() => _updateHinweisAus = true),
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: NavigationBar(

@@ -18,6 +18,9 @@ Beim allerersten Mal fragt Android nach der Erlaubnis, Apps aus dieser Quelle zu
 
 > **Updates legen sich über die alte Fassung — die Sammlung bleibt erhalten.**
 > Nicht vorher deinstallieren, das würde sie löschen.
+>
+> Ab Version 0.9.0 meldet die App neue Versionen selbst und installiert sie auf Antippen.
+> Der Link oben ist dann nur noch für die Erstinstallation nötig.
 
 Alle Fassungen: [Releases](https://github.com/FeyzAras/onepiece-scanner/releases) ·
 Bedienung: [ANLEITUNG.md](ANLEITUNG.md) ·
@@ -93,7 +96,7 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 148 Tests, laufen ohne Gerät
+flutter test                        # 182 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```

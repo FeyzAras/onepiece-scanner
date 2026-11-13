@@ -3,6 +3,10 @@
          Ohne INTERNET im Release-Manifest bleiben die Kartenbilder in der Release-APK leer. -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Aktualisierung aus der App heraus. Der Nutzer muss es trotzdem einmalig in den
+         Einstellungen freigeben ("Unbekannte Apps installieren") - ohne diesen Eintrag
+         taucht die App dort gar nicht erst auf. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <uses-feature android:name="android.hardware.camera" android:required="true"/>
 
     <application
@@ -31,6 +35,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Ergebnis einer Update-Installation. Nicht exportiert: Nur das System darf ihn
+             ueber den PendingIntent der eigenen Installationssitzung ansprechen. -->
+        <receiver
+            android:name=".InstallStatusReceiver"
+            android:exported="false"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
