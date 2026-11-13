@@ -67,10 +67,14 @@ class CollectionView extends StatefulWidget {
   /// Stand der geltenden Preisdaten.
   final String priceAsOf;
 
+  /// true, wenn die gespeicherte Sammlung beim Start nicht gelesen werden konnte.
+  final bool loadFailed;
+
   const CollectionView({
     super.key,
     required this.entries,
     required this.folders,
+    this.loadFailed = false,
     required this.onRemoveOne,
     required this.onSwitchArtwork,
     required this.variantsOf,
@@ -169,15 +173,31 @@ class _CollectionViewState extends State<CollectionView> {
     );
   }
 
-  Future<void> _export(List<StackedCard> stacks) async {
+  /// Sichert IMMER die vollstaendige Sammlung, nie die gerade angezeigte Auswahl.
+  ///
+  /// Frueher wurde die gefilterte Liste exportiert: Wer einen Suchbegriff stehen
+  /// hatte und dann sicherte, bekam ohne jeden Hinweis eine Teilsicherung. Fuer ein
+  /// Sicherungsnetz ist das die gefaehrlichste denkbare Eigenschaft.
+  Future<void> _export(int angezeigt) async {
     setState(() => _exporting = true);
     try {
       await CollectionExport.share(
-        stacks: stacks,
+        entries: widget.entries,
+        priceOf: widget.priceOf,
+        choiceOf: widget.choiceOf,
         folderName: (id) =>
             widget.folders.firstWhere((f) => f.id == id, orElse: () => const ScanFolder(id: '', name: '—')).name,
         priceAsOf: widget.priceAsOf,
       );
+      if (mounted && angezeigt < widget.entries.length) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gesichert wurde die ganze Sammlung: '
+                '${widget.entries.length} Karten, nicht nur die $angezeigt angezeigten.'),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -196,6 +216,23 @@ class _CollectionViewState extends State<CollectionView> {
       color: kSurface,
       child: Column(
         children: [
+          if (widget.loadFailed)
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0x33FF5252),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0x66FF5252)),
+              ),
+              child: const Text(
+                'Die gespeicherte Sammlung konnte nicht gelesen werden. '
+                'Eine Kopie der Daten wurde gesichert und ist nicht verloren — '
+                'bitte melde dich, bevor du neu scannst.',
+                style: TextStyle(fontSize: 12, height: 1.35),
+              ),
+            ),
           Row(
             children: [
               Expanded(
@@ -206,10 +243,12 @@ class _CollectionViewState extends State<CollectionView> {
               ),
               Text(formatEuro(totalValue),
                   style: const TextStyle(color: kGold, fontWeight: FontWeight.bold, fontSize: 15)),
-              if (stacks.isNotEmpty)
+              // Haengt an der GESAMTEN Sammlung, nicht an der gefilterten Ansicht -
+              // sonst waere der Knopf genau dann weg, wenn ein Filter nichts findet.
+              if (widget.entries.isNotEmpty)
                 IconButton(
-                  onPressed: _exporting ? null : () => _export(stacks),
-                  tooltip: 'Als CSV exportieren',
+                  onPressed: _exporting ? null : () => _export(totalCards),
+                  tooltip: 'Sammlung sichern (CSV + Sicherungsdatei)',
                   visualDensity: VisualDensity.compact,
                   icon: _exporting
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))

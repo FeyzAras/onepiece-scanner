@@ -56,6 +56,20 @@ class _HomePageState extends State<HomePage> {
   /// Vom Nutzer gewaehlte Druckvariante je Karten-ID: der Platz in der Versionsliste.
   final Map<String, int> _priceChoice = {};
 
+  /// Gespeicherte Scans, zu denen der mitgelieferte Katalog keine Karte kennt.
+  ///
+  /// Sie werden nicht angezeigt, aber unveraendert weitergeschrieben. Sonst wuerde
+  /// ein App-Update, das eine Karten-ID aendert, die betroffenen Karten beim naechsten
+  /// Speichern endgueltig loeschen - unbemerkt.
+  List<StoredScan> _unresolvedScans = const [];
+
+  /// Eintraege, die sich gar nicht lesen liessen. Ebenfalls nur durchreichen.
+  List<Map<String, dynamic>> _unreadableScans = const [];
+
+  /// true, wenn die gespeicherte Sammlung nicht gelesen werden konnte. Der Rohtext
+  /// liegt dann gesichert vor.
+  bool _loadFailed = false;
+
   /// Tagesaktuelle Preise aus dem Repository. Null, solange nichts geladen wurde -
   /// dann gelten die im Katalog mitgelieferten Preise.
   LivePrices? _livePrices;
@@ -76,10 +90,14 @@ class _HomePageState extends State<HomePage> {
 
     final state = await CollectionStore.load();
     final restored = <CollectionEntry>[];
+    final unresolved = <StoredScan>[];
     for (final s in state.scans) {
       final card = matcher.byId(s.cardId);
       if (card != null) {
         restored.add(CollectionEntry(card: card, folderId: s.folderId, how: s.how, at: s.at));
+      } else {
+        // Katalog kennt diese ID nicht (mehr). Aufbewahren statt verwerfen.
+        unresolved.add(s);
       }
     }
 
@@ -88,6 +106,9 @@ class _HomePageState extends State<HomePage> {
       _matcher = matcher;
       _folders = state.folders;
       _activeFolderId = state.activeFolderId;
+      _unresolvedScans = unresolved;
+      _unreadableScans = state.unreadableScans;
+      _loadFailed = state.loadFailed;
       _priceChoice
         ..clear()
         ..addAll(state.priceChoice);
@@ -148,8 +169,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> _persist() => CollectionStore.save(CollectionState(
         folders: _folders,
         activeFolderId: _activeFolderId,
-        scans: _collection.map((e) => e.toStored()).toList(),
+        // Die nicht aufloesbaren Eintraege muessen mit, sonst loescht sie der
+        // naechste Speichervorgang endgueltig.
+        scans: [..._collection.map((e) => e.toStored()), ..._unresolvedScans],
         priceChoice: _priceChoice,
+        unreadableScans: _unreadableScans,
       ));
 
   /// Alle Cardmarket-Versionen dieser Kartennummer - bevorzugt tagesaktuell,
@@ -378,6 +402,7 @@ class _HomePageState extends State<HomePage> {
           CollectionView(
             entries: _collection,
             folders: _folders,
+            loadFailed: _loadFailed,
             onRemoveOne: _removeOne,
             onSwitchArtwork: _switchArtwork,
             variantsOf: (card) => _matcher?.variantsOf(card) ?? [card],

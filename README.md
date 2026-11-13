@@ -60,7 +60,8 @@ Version antippen, falls die Automatik danebenliegt.
 
 **Sammlung** — Ordner, Dubletten-Zähler (×3), Suche über Name/Nummer/Set, Sortierung nach zuletzt
 gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Bleibt dauerhaft
-gespeichert und lässt sich als **CSV exportieren**.
+gespeichert und lässt sich **sichern**: eine CSV für Excel und eine JSON-Datei, die sich
+verlustfrei wieder einlesen lässt.
 
 **Decks** — Turnierdecks aus allen Sets (OP01–OP17), englisches und japanisches Format: rund 4.900
 Listen aus 1.864 Archetypen. Für jedes Deck ein Balken, wie viele Karten davon du besitzt; in der
@@ -95,7 +96,7 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 31 Tests der Erkennungslogik
+flutter test                        # 79 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```

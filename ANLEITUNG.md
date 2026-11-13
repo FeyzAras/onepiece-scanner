@@ -109,16 +109,27 @@ Japanisch) und auf Decks einschränken, von denen du mindestens die Hälfte besi
 Quelle ist onepiecetopdecks.com; der Stand steht oben. Die App holt sich neue Decklisten selbst,
 eine neue App-Version ist dafür nicht nötig.
 
-### Sammlung exportieren
+### Sammlung sichern
 
-Oben rechts in der Sammlung öffnet das Teilen-Symbol den **CSV-Export**: eine Tabelle mit
-Kartennummer, Name, Set, Seltenheit, Anzahl, Einzel- und Gesamtpreis, Ordner und Scandatum.
+Oben rechts in der Sammlung öffnet das Teilen-Symbol die Sicherung. Dabei entstehen **zwei
+Dateien**, die zusammen weitergegeben werden:
 
-Die Datei lässt sich per WhatsApp, E-Mail oder Cloud weitergeben und in Excel direkt öffnen —
-Semikolon als Trennzeichen und Komma als Dezimalzeichen, also kein Importdialog.
+| Datei | Wofür |
+| --- | --- |
+| `sammlung-TT-MM-JJJJ.csv` | Zum Ansehen. Öffnet in Excel direkt richtig — Semikolon als Trennzeichen, Komma als Dezimalzeichen, kein Importdialog |
+| `sammlung-TT-MM-JJJJ.json` | **Die eigentliche Sicherung.** Nur diese Datei lässt sich verlustfrei wieder einlesen |
 
-**Das ist zugleich deine Sicherung:** Die Sammlung liegt sonst nur in der App und wäre bei einer
-Deinstallation weg.
+Die CSV enthält Kartennummer, Name, Set, Seltenheit, Kartentyp, Farbe, Anzahl, Einzel- und
+Gesamtpreis, Ordner, Erkennungsart und Scandatum. Ganz rechts stehen drei technische Spalten
+(Alt-Art, Ordner-ID, Preiswahl) — die braucht die App beim Wiedereinlesen, im Alltag kannst du
+sie ignorieren.
+
+Gesichert wird **immer die ganze Sammlung**, auch wenn gerade ein Suchbegriff oder ein
+Ordner-Filter aktiv ist. Darauf weist die App dann eigens hin.
+
+> ⚠️ **Wichtig: Die Dateien liegen zunächst nur in der App selbst.** Das Teilen-Fenster zu öffnen
+> genügt nicht — schick sie dir wirklich zu, in Google Drive, in die Downloads oder per Mail an
+> dich selbst. Sonst sind sie bei einer Deinstallation mit weg.
 
 ### Japanische Karten
 

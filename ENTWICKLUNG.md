@@ -13,7 +13,7 @@ in [README.md](README.md).
 # Android-App bauen
 cd android_app
 flutter pub get
-flutter test                                  # 53 Tests, laufen ohne Gerät
+flutter test                                  # 79 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi   # -> build/app/outputs/flutter-apk/
 
 # Daten aktualisieren
@@ -64,7 +64,7 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     price_store.dart    Tagesaktuelle Preise nachladen
     widgets.dart        Gemeinsame Bausteine und Farben
   assets/             cards.json, decks.json (in die App eingebacken)
-  test/               53 Tests, laufen ohne Gerät
+  test/               79 Tests, laufen ohne Gerät
 
 scripts/              Datenpflege (Node, läuft nur beim Entwickeln/in CI)
 docs/                 Web-Version (PWA) + die Datendateien, die die App nachlädt
@@ -327,24 +327,100 @@ Seite bei schnell aufeinanderfolgenden Abrufen — daher 2,5 Sekunden Pause zwis
 7,9 MB — zu viel fürs Handy. Je Archetyp werden die fünf neuesten behalten (`MAX_JE_ARCHETYP`),
 das ergibt 1,55 MB bei 96 % Kartenabdeckung.
 
+### Drei stille Datenverluste (gefunden und behoben am 2026-11-13)
+
+Alle drei verschwiegen ihren Schaden — das ist das Gemeinsame und der Grund, warum sie hier stehen.
+
+**Der Export sicherte nur das Sichtbare.** `collection_view.dart` übergab dem Export-Knopf die
+**gefilterte** Anzeigeliste. Wer einen Suchbegriff stehen hatte oder einen Ordner-Chip gesetzt hatte
+und dann sicherte, bekam ohne Hinweis eine Teilsicherung. Zusätzlich gruppierte die Anzeige nur nach
+Karten-ID — dieselbe Karte in zwei Ordnern wurde zu *einer* Zeile, der zweite Ordner fiel weg.
+Jetzt: `CollectionExport.buildCsv` bekommt die vollständige Sammlung und gruppiert nach
+`(Karten-ID, Ordner, Erkennungsart)`. Ist ein Filter aktiv, sagt eine Meldung ausdrücklich, dass
+trotzdem alles gesichert wurde.
+
+**Unbekannte Karten-IDs wurden beim Start gelöscht.** `main.dart` löste jeden gespeicherten Scan
+über den Katalog auf und ließ fallen, was er nicht fand; der nächste Speichervorgang schrieb die
+gekürzte Liste zurück. Ein App-Update, das eine ID ändert, hätte die betroffenen Karten unbemerkt
+entfernt. Jetzt wandern sie nach `_unresolvedScans` und werden unverändert mitgeschrieben.
+
+**Beschädigte Daten führten zum stillen Leerstart.** `CollectionStore.load()` fing jeden Lesefehler
+ab und startete leer — der nächste Klick überschrieb die noch vorhandenen Rohdaten endgültig. Jetzt
+wird der Rohtext unter `collection_v2_broken_<Zeitstempel>` gesichert (höchstens drei), und die
+Sammlung zeigt einen unübersehbaren Hinweis.
+
+**Dazu, gleicher Anlass:** `assets/decks.json` stand nicht in `pubspec.yaml` und landete deshalb nie
+im APK. `DeckStore.loadBundled()` scheiterte immer still, der Deck-Tab funktionierte nur mit Netz.
+
 ---
 
 ## 8. Veröffentlichen
+
+### Der Signaturschlüssel — vor allem anderen lesen
+
+Android lässt ein Update nur zu, wenn es mit **demselben Schlüssel** signiert ist wie die
+installierte App. Passt er nicht, bleibt nur Deinstallieren — und damit wäre die Sammlung des
+Nutzers weg. Dieser Schlüssel ist das unersetzlichste Stück des Projekts.
+
+| | |
+| --- | --- |
+| Arbeitskopie | `C:\Users\ArasFeyzullah\Dev\.secrets\onepiece-release.jks` |
+| Herkunft | ursprünglich der Flutter-Debug-Schlüssel, erzeugt am 05.10.2026 |
+| Gültig bis | **27.09.2056** |
+| Alias / Passwort | `androiddebugkey` / `android` |
+| **Soll-Fingerabdruck** | `CC:BD:78:F9:5F:9D:ED:20:8A:B9:6D:CC:DF:ED:50:A3:BE:70:95:E1:D6:CD:30:55:23:43:9C:F6:83:CB:04:BB` |
+
+Der Fingerabdruck ist gegen die veröffentlichte v0.7.0 geprüft (`apksigner verify --print-certs`)
+und stimmt überein — es ist nachweislich der Schlüssel aller bisherigen Releases.
+
+Eingebunden über `android/key.properties` (nicht versioniert). **Fehlt die Keystore-Datei, bricht
+der Build ab.** Das ist Absicht: Vorher stand hier `signingConfigs.getByName("debug")`, und wenn
+`~/.android/debug.keystore` fehlt, erzeugt das Android-Werkzeug stillschweigend einen *neuen*
+Schlüssel. Der Build läuft durch, die APK ist signiert — nur mit fremder Identität. Aufgefallen
+wäre das erst auf dem Handy mit „App nicht installiert", und dann wäre es nicht mehr zu reparieren.
+
+> ⚠️ **Geht diese Datei verloren, lässt sich die installierte App nie wieder aktualisieren.**
+> Mindestens drei Kopien halten, davon eine außerhalb des Rechners (Passwortmanager als Anhang,
+> verschlüsseltes Archiv auf einem Stick). Ein Backup gilt erst als bewiesen, wenn damit gebaut
+> wurde und `apksigner verify --print-certs` denselben Fingerabdruck liefert.
+
+### Versionsnummern
+
+`android_app/pubspec.yaml` ist die einzige Quelle der Wahrheit. Build-Nummer nach der Regel
+`major*10000 + minor*100 + patch` — 0.8.0 wird also `0.8.0+800`. Beim Bauen mit `--split-per-abi`
+addiert Flutter `1000 × ABI`, arm64 ergibt `2800`.
+
+**Pflicht: immer `--split-per-abi`, nie `-P force-version-code-ignoring-abi=true`.** Ein
+universeller Build hätte `versionCode 800` — kleiner als die veröffentlichte `2001`, und Android
+lehnt die Installation als Downgrade ab. Der Git-Tag `vX.Y.Z` muss zur pubspec-Version passen.
+
+`package.json` trägt eine eigene Version für die Node-Datenpipeline. Die hat mit der App nichts zu
+tun und wird bewusst nicht mitgezogen.
+
+### Ablauf
 
 ```powershell
 . C:\Users\<Benutzer>\Dev\.toolchain\env.ps1
 cd android_app
 flutter build apk --release --split-per-abi
 
+# Signatur prüfen, BEVOR das Release entsteht
+& "<toolchain>\android-sdk\build-tools\36.0.0\apksigner.bat" verify --print-certs `
+  build\app\outputs\flutter-apk\app-arm64-v8a-release.apk
+
 cd ..
 gh release create v0.8.0 `
-  "<Pfad>\app-arm64-v8a-release.apk" `
+  "android_app\build\app\outputs\flutter-apk\app-arm64-v8a-release.apk#onepiece-scanner-arm64.apk" `
   --title "v0.8.0 – …" --notes-file <datei.md>
 ```
 
-Hochgeladen wird nur die **arm64**-Variante (aktuelle Handys). Die APK ist mit dem
-Flutter-Debug-Schlüssel signiert — ausreichend zum Selbstinstallieren, für den Play Store bräuchte
-es einen eigenen Signaturschlüssel.
+Hochgeladen wird nur die **arm64**-Variante (aktuelle Handys). Der Anhang `#onepiece-scanner-arm64.apk`
+benennt die Datei beim Hochladen um — `README.md` und `ANLEITUNG.md` nennen diesen Namen, und ab
+der In-App-Aktualisierung sucht die App ihn.
+
+**Reihenfolge beachten, sobald `docs/data/version.json` existiert:** erst das Release samt APK
+anlegen und prüfen, dass die Adresse wirklich antwortet — **danach** die `version.json` schreiben.
+Andersherum bieten alle Geräte innerhalb von Minuten ein Update an, dessen Datei es noch nicht gibt.
 
 ### Automatik auf GitHub
 
@@ -369,6 +445,10 @@ müssen die Adressen in `price_store.dart` und `deck_model.dart` angepasst werde
   Katalogbildern statt Kamerafotos.
 - Ist die Erkennung im Alltag schnell genug, oder nervt die doppelte Bestätigung?
 - Stimmen die Preise gegen den echten Markt?
+
+**In Arbeit (Stand 2026-11-13):**
+- Kartenlisten importieren — eigene Sicherung, Deckliste, Nummernliste, Cardmarket-Export
+- Aktualisierung aus der App heraus statt manuell über die Releases-Seite
 
 **Naheliegende Erweiterungen:**
 - Sammlungswert über die Zeit verfolgen (Preisdaten kommen ja täglich)

@@ -2,7 +2,14 @@ name: onepiece_scanner
 description: "One Piece TCG Kartenscanner - Karte vor die Kamera halten, wird automatisch erkannt."
 publish_to: 'none'
 
-version: 1.0.0+1
+# Die Versionsnummer ist die einzige Quelle der Wahrheit - Git-Tag und version.json
+# werden daraus abgeleitet.
+#
+# Die Build-Nummer folgt der Regel major*10000 + minor*100 + patch (0.8.0 -> 800).
+# Beim Bauen mit --split-per-abi addiert Flutter 1000 * ABI, arm64 ergibt also 2800.
+# Das muss groesser bleiben als der bisher veroeffentlichte Wert 2001, sonst lehnt
+# Android die Installation als Downgrade ab.
+version: 0.8.0+800
 
 environment:
   sdk: ^3.13.5
@@ -27,4 +34,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/cards.json
+    # Fehlte bisher: die Datei lag im Ordner, wurde aber nicht ins APK aufgenommen.
+    # Dadurch scheiterte DeckStore.loadBundled() immer still und der Deck-Tab
+    # funktionierte nur mit Netzverbindung.
+    - assets/decks.json
 
