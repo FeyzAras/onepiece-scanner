@@ -1,0 +1,248 @@
+{
+  "generated": "2026-11-14",
+  "first": "2026-10-04",
+  "last": "2026-11-13",
+  "days": 36,
+  "sets": {
+    "EB01": {
+      "cards": 89,
+      "bytes": 10811
+    },
+    "EB02": {
+      "cards": 82,
+      "bytes": 10940
+    },
+    "EB03": {
+      "cards": 82,
+      "bytes": 10620
+    },
+    "EB04": {
+      "cards": 84,
+      "bytes": 10360
+    },
+    "OP01": {
+      "cards": 173,
+      "bytes": 22589
+    },
+    "OP02": {
+      "cards": 180,
+      "bytes": 21510
+    },
+    "OP03": {
+      "cards": 176,
+      "bytes": 20580
+    },
+    "OP04": {
+      "cards": 155,
+      "bytes": 17376
+    },
+    "OP05": {
+      "cards": 174,
+      "bytes": 19035
+    },
+    "OP06": {
+      "cards": 177,
+      "bytes": 19167
+    },
+    "OP07": {
+      "cards": 168,
+      "bytes": 18270
+    },
+    "OP08": {
+      "cards": 150,
+      "bytes": 16249
+    },
+    "OP09": {
+      "cards": 185,
+      "bytes": 19704
+    },
+    "OP10": {
+      "cards": 162,
+      "bytes": 18393
+    },
+    "OP11": {
+      "cards": 158,
+      "bytes": 17335
+    },
+    "OP12": {
+      "cards": 168,
+      "bytes": 18326
+    },
+    "OP13": {
+      "cards": 171,
+      "bytes": 19203
+    },
+    "OP14": {
+      "cards": 160,
+      "bytes": 18252
+    },
+    "OP15": {
+      "cards": 149,
+      "bytes": 17298
+    },
+    "OP16": {
+      "cards": 150,
+      "bytes": 18517
+    },
+    "OP17": {
+      "cards": 152,
+      "bytes": 19297
+    },
+    "P": {
+      "cards": 201,
+      "bytes": 31448
+    },
+    "PRB01": {
+      "cards": 2,
+      "bytes": 790
+    },
+    "PRB02": {
+      "cards": 36,
+      "bytes": 5989
+    },
+    "ST01": {
+      "cards": 34,
+      "bytes": 5463
+    },
+    "ST02": {
+      "cards": 34,
+      "bytes": 4921
+    },
+    "ST03": {
+      "cards": 29,
+      "bytes": 4406
+    },
+    "ST04": {
+      "cards": 26,
+      "bytes": 3746
+    },
+    "ST05": {
+      "cards": 34,
+      "bytes": 4211
+    },
+    "ST06": {
+      "cards": 21,
+      "bytes": 2814
+    },
+    "ST07": {
+      "cards": 22,
+      "bytes": 2884
+    },
+    "ST08": {
+      "cards": 16,
+      "bytes": 2199
+    },
+    "ST09": {
+      "cards": 17,
+      "bytes": 2211
+    },
+    "ST10": {
+      "cards": 23,
+      "bytes": 3990
+    },
+    "ST11": {
+      "cards": 6,
+      "bytes": 1228
+    },
+    "ST12": {
+      "cards": 22,
+      "bytes": 2848
+    },
+    "ST13": {
+      "cards": 36,
+      "bytes": 5753
+    },
+    "ST14": {
+      "cards": 23,
+      "bytes": 3261
+    },
+    "ST15": {
+      "cards": 7,
+      "bytes": 1563
+    },
+    "ST16": {
+      "cards": 9,
+      "bytes": 1810
+    },
+    "ST17": {
+      "cards": 9,
+      "bytes": 1970
+    },
+    "ST18": {
+      "cards": 10,
+      "bytes": 2224
+    },
+    "ST19": {
+      "cards": 6,
+      "bytes": 1154
+    },
+    "ST20": {
+      "cards": 6,
+      "bytes": 1118
+    },
+    "ST21": {
+      "cards": 33,
+      "bytes": 5639
+    },
+    "ST22": {
+      "cards": 31,
+      "bytes": 4956
+    },
+    "ST23": {
+      "cards": 6,
+      "bytes": 1186
+    },
+    "ST24": {
+      "cards": 6,
+      "bytes": 1170
+    },
+    "ST25": {
+      "cards": 5,
+      "bytes": 1024
+    },
+    "ST26": {
+      "cards": 6,
+      "bytes": 1328
+    },
+    "ST27": {
+      "cards": 6,
+      "bytes": 1256
+    },
+    "ST28": {
+      "cards": 5,
+      "bytes": 1117
+    },
+    "ST29": {
+      "cards": 31,
+      "bytes": 4665
+    },
+    "ST30": {
+      "cards": 34,
+      "bytes": 5751
+    },
+    "ST31": {
+      "cards": 6,
+      "bytes": 1360
+    },
+    "ST32": {
+      "cards": 6,
+      "bytes": 1357
+    },
+    "ST33": {
+      "cards": 5,
+      "bytes": 1145
+    },
+    "ST34": {
+      "cards": 5,
+      "bytes": 1124
+    },
+    "ST35": {
+      "cards": 5,
+      "bytes": 1080
+    },
+    "ST36": {
+      "cards": 5,
+      "bytes": 1142
+    }
+  }
+}

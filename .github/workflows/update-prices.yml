@@ -20,6 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Volle Historie: Der Preisverlauf wird aus den frueheren Staenden von
+          # docs/data/prices.json gebaut. Eine flache Kopie (Standard) kennt nur den
+          # letzten Commit - build-price-history.js bricht dann bewusst ab.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -41,14 +46,19 @@ jobs:
       - name: Preisdatei schreiben
         run: node scripts/build-price-file.js
 
+      # Je Set eine Datei mit dem Verlauf aller bisherigen Tage - fuer die Wert- und
+      # Preiskurven in der App. Nimmt den gerade geschriebenen Stand mit auf.
+      - name: Preisverlauf schreiben
+        run: node scripts/build-price-history.js
+
       - name: Aenderungen committen
         run: |
-          if git diff --quiet docs/data/prices.json; then
+          git add docs/data/prices.json docs/data/history
+          if git diff --cached --quiet; then
             echo "Keine Preisaenderungen."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data/prices.json
           git commit -m "Preise aktualisiert ($(date -u +%Y-%m-%d))"
           git push

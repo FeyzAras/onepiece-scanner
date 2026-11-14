@@ -10,8 +10,10 @@
     "data:hashes": "node scripts/build-image-hashes.js",
     "data:decks": "node scripts/fetch-decks.js",
     "data:sync": "node scripts/sync-cards.js",
+    "data:history": "node scripts/build-price-history.js",
     "data:all": "npm run data:catalog && npm run data:prices && npm run data:hashes && npm run data:decks && npm run data:sync",
     "test": "node scripts/verify-match.mjs",
+    "test:data": "node --test \"scripts/*.test.js\"",
     "dev": "node scripts/dev-server.js"
   },
   "dependencies": {
