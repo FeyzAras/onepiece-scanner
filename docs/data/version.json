@@ -1,19 +1,19 @@
 {
-    "version":  "0.11.0",
-    "versionCode":  3100,
+    "version":  "0.12.0",
+    "versionCode":  3200,
     "released":  "2026-11-14",
     "minSdk":  24,
     "abi":  "arm64-v8a",
     "apk":  {
-                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.11.0/onepiece-scanner-arm64.apk",
-                "bytes":  39508533,
-                "sha256":  "c6cf99911bbe7b959c2538f6439d851d3d514d31fe53d3e32182ff526d3383df"
+                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.12.0/onepiece-scanner-arm64.apk",
+                "bytes":  39596077,
+                "sha256":  "698de20d8f2e655b68261c865ac96d15255f9903b64e277181bc2c57aa39e00f"
             },
     "notes":  [
-                  "Karten vormerken, die du noch suchst — mit den Kosten zum heutigen Preis, zu finden in der Übersicht",
-                  "Fehlende Karten eines Sets oder Turnierdecks mit einem Tipp übernehmen",
-                  "Liste als Deckliste teilen (4xOP01-001 …) — passt in jeden Chat mit einem Händler",
-                  "Scannst du eine gesuchte Karte, wird sie automatisch abgehakt"
+                  "Leader wählen, Karten hinzufügen — der Kartensucher zeigt nur, was zum Leader passt",
+                  "Laufende Prüfung nach den offiziellen Regeln: 50 Karten, höchstens 4 je Nummer (Alt-Arts zählen mit), nur Farben des Leaders, Sonderregeln einzelner Leader",
+                  "Kostenkurve und Abgleich mit deiner Sammlung — fehlende Karten mit einem Tipp auf die Wunschliste",
+                  "Deckliste einfügen oder teilen (1xOP01-001 …), jedes Turnierdeck lässt sich als Vorlage übernehmen"
               ],
     "mandatory":  false
 }
