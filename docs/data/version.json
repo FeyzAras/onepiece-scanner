@@ -1,19 +1,19 @@
 {
-    "version":  "0.8.0",
-    "versionCode":  2800,
-    "released":  "2026-11-13",
+    "version":  "0.9.0",
+    "versionCode":  2900,
+    "released":  "2026-11-14",
     "minSdk":  24,
     "abi":  "arm64-v8a",
     "apk":  {
-                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.8.0/onepiece-scanner-arm64.apk",
-                "bytes":  39161921,
-                "sha256":  "4dc77020f5020b44579cf92fec2b7c2f3c6740f53aa34fc89b8f42ba8cbcd4be"
+                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.9.0/onepiece-scanner-arm64.apk",
+                "bytes":  39294321,
+                "sha256":  "63fb87a1d6b11de9feb8ea9bcf5cb54657fafba73dff0d4cd002dc2b217debe1"
             },
     "notes":  [
-                  "Sammlung sichern erzeugt jetzt zwei Dateien: eine CSV fuer Excel und eine JSON-Sicherung zum verlustfreien Wiedereinlesen",
-                  "Listen einlesen: eigene Sicherung, CSV, Deckliste, Nummernliste oder Cardmarket-Export",
-                  "Drei stille Datenverluste behoben - unter anderem sicherte der Export bei aktivem Filter nur die sichtbaren Karten",
-                  "Deck-Tab funktioniert jetzt auch ohne Netzverbindung"
+                  "Die App sieht hÃ¶chstens einmal am Tag selbst nach, ob es eine neue Version gibt, und zeigt dann unten einen Hinweis",
+                  "Antippen zeigt, was neu ist â€” danach Download mit Fortschrittsanzeige und Installation auf Knopfdruck",
+                  "Gezielt nachsehen: Sammlung â†’ â‹® â†’ Nach Update suchen; dort steht auch die installierte Version",
+                  "Lehnt Android ein Update ab, warnt die App ausdrÃ¼cklich davor, zu deinstallieren, und bietet sofort die Sicherung an"
               ],
     "mandatory":  false
 }
