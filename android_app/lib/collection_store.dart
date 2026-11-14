@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'my_decks.dart';
+
 /// Ein Ordner, in den gescannte Karten einsortiert werden.
 class ScanFolder {
   final String id;
@@ -82,6 +84,9 @@ class CollectionState {
   /// JSON-Sicherung, im Wiederherstellen und im Rueckgaengig nach einem Import.
   final Map<String, int> wishlist;
 
+  /// Selbst gebaute Decks. Ebenfalls im selben Datensatz, also in der Sicherung.
+  final List<MeinDeck> myDecks;
+
   const CollectionState({
     required this.folders,
     required this.activeFolderId,
@@ -91,6 +96,7 @@ class CollectionState {
     this.unreadableScans = const [],
     this.loadFailed = false,
     this.wishlist = const {},
+    this.myDecks = const [],
   });
 }
 
@@ -166,6 +172,13 @@ class CollectionStore {
         });
       }
 
+      final decks = <MeinDeck>[];
+      for (final d in (map['myDecks'] as List? ?? [])) {
+        if (d is! Map) continue;
+        final deck = MeinDeck.fromJson(d.cast<String, dynamic>());
+        if (deck != null) decks.add(deck);
+      }
+
       return CollectionState(
         folders: folders.isEmpty ? _defaultFolders() : folders,
         activeFolderId: (map['active'] as String?) ?? defaultFolderId,
@@ -174,6 +187,7 @@ class CollectionStore {
         legacyPriceAmounts: legacy,
         unreadableScans: unreadable,
         wishlist: wunsch,
+        myDecks: decks,
       );
     } catch (_) {
       return null;
@@ -241,6 +255,7 @@ class CollectionStore {
         'priceChoice': state.priceChoice,
         if (state.unreadableScans.isNotEmpty) 'unknown': state.unreadableScans,
         if (state.wishlist.isNotEmpty) 'wishlist': state.wishlist,
+        if (state.myDecks.isNotEmpty) 'myDecks': state.myDecks.map((d) => d.toJson()).toList(),
       });
 
   static Future<void> save(CollectionState state) async {

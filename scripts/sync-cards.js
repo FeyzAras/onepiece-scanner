@@ -26,7 +26,19 @@ for (const { from, to } of copies) {
   }
   const dest = path.join(root, to);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  fs.copyFileSync(src, dest);
+
+  // Erst in eine Zwischendatei, dann umbenennen. Wird das Skript mitten im Kopieren
+  // beendet, bleibt so die alte Datei stehen statt einer halben. Genau das ist einmal
+  // passiert: "node sync-cards.js | Select-Object -First 2" in PowerShell beendete Node
+  // nach zwei Ausgabezeilen - assets/decks.json blieb mit 0 Byte zurueck.
+  const zwischen = `${dest}.tmp`;
+  fs.copyFileSync(src, zwischen);
+  if (fs.statSync(zwischen).size !== fs.statSync(src).size) {
+    fs.unlinkSync(zwischen);
+    throw new Error(`Kopie unvollstaendig: ${from}`);
+  }
+  fs.renameSync(zwischen, dest);
+
   const mb = (fs.statSync(dest).size / 1024 / 1024).toFixed(2);
   console.log(`${from} -> ${to} (${mb} MB)`);
 }

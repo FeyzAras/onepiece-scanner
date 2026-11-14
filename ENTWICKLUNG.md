@@ -71,12 +71,14 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     line_chart.dart     Liniendiagramm, Preiskurve je Karte, Fortschrittsbalken (CustomPainter)
     wishlist.dart       Wunschliste als gemeinsames Modell (ChangeNotifier) — ohne UI
     wishlist_view.dart  Wunschlisten-Seite, Zusammenfassung, Stern zum Vormerken
-    decks_view.dart     Deck-Tab mit Sammlungsabgleich
-    deck_model.dart     Decklisten einlesen und nachladen
+    decks_view.dart     Deck-Tab: Umschalter Turnierdecks | Meine Decks, Sammlungsabgleich
+    deck_model.dart     Turnier-Decklisten einlesen und nachladen
+    my_decks.dart       Eigene Decks: Modell, Regelprüfung, Statistik, Text-Ein/Ausgabe — ohne UI
+    my_decks_view.dart  Deckliste, Editor, Kartensuche, Leaderwahl, Kostenkurve
     price_store.dart    Tagesaktuelle Preise nachladen
     widgets.dart        Gemeinsame Bausteine und Farben (inkl. geprüfter Diagrammfarben)
   assets/             cards.json, decks.json, sets.json (in die App eingebacken)
-  test/               228 Tests, laufen ohne Gerät
+  test/               267 Tests, laufen ohne Gerät
   android/app/src/main/kotlin/…/InstallChannel.kt, InstallStatusReceiver.kt
                       PackageInstaller-Sitzung für die Aktualisierung aus der App
 
@@ -108,7 +110,9 @@ Vier Schritte, **die Reihenfolge ist wichtig**:
 
 `build-db.js` schreibt seit v0.10.0 zusätzlich `data/sets.json` (Set-Code → Produktname) und
 übernimmt `colors` als **Liste** sowie den `counter`-Wert. Vorher ging die zweite Farbe der
-154 zweifarbigen Leader verloren.
+154 zweifarbigen Leader verloren. Seit v0.12.0 kommen die **`types`** dazu („East Blue",
+„Straw Hat Crew") — die Deckprüfung braucht sie für Leader wie P-117 Nami, die nur einen Typ
+erlauben.
 
 **Set-Namen** kommen aus dem Feld `card_sets` der Quelle („-ROMANCE DAWN- [OP-01]"). Ein einfacher
 Mehrheitsentscheid wäre falsch: Nachdrucke stehen in fremden Produkten, und die EB04-Karten
@@ -161,6 +165,57 @@ Set-Ansicht, die als eigene Seite aufliegt und sonst nichts von der Änderung mi
 | Alt-Art hakt den Wunsch nach der Normalversion ab, nicht umgekehrt | fürs Spielen ist das Artwork egal; wer die Alt-Art sucht, will aber die Alt-Art |
 | Deck-Wünsche: Normalversion, Anzahl = Bedarf − Besitz | Besitz zählt jedes Artwork (`ownedCount` über die Basisnummer) |
 | Teilen im Deckformat `4xOP01-001` | versteht jeder Händler, und der eigene Import liest es wieder ein (Test vorhanden) |
+
+### Eigene Decks (seit v0.12.0)
+
+`my_decks.dart` enthält Modell und Regeln ohne UI, `my_decks_view.dart` die Ansichten. `MeineDecks`
+ist wie die Wunschliste ein `ChangeNotifier` mit `onAenderung`, gespeichert in `collection_v2`
+unter `myDecks` — damit in Sicherung, Wiederherstellen und Rückgängig enthalten. Die
+Sammlungsabdeckung zählt jedes Artwork (`ownedCount` über die Basisnummer), Fehlendes geht als
+Normalversion auf die Wunschliste.
+
+**Die Regeln stammen aus den offiziellen Comprehensive Rules v1.2.1 (28.08.2026)**, nicht aus dem
+Gedächtnis:
+
+| Regel | Umsetzung |
+| --- | --- |
+| 5-1-2: genau 1 Leader, 50 Karten | der Leader steht in `leaderId`, nie in `karten` |
+| 5-1-2-1: Character, Event, Stage | anderes → `falscherTyp` |
+| 5-1-2-2: nur Farben des Leaders | eine mehrfarbige Karte braucht **alle** ihre Farben im Leader — sonst ist sie zugleich eine Karte einer nicht enthaltenen Farbe |
+| 5-1-2-3: höchstens 4 je Kartennummer | gezählt über `baseId`, Alt-Arts zählen mit |
+| 5-1-2-4: Karteneffekte gehen vor | „any number of this card in your deck" hebt die Grenze auf (Pacifista OP01-075, Biscuit Warrior OP08-072, Prisoner of Impel Down OP16-042). Leader-Grenzen per Regex aus dem Effekttext: Rayleigh OP12-001 (Kosten ≥ 5), Imu OP13-079 (Events ab Kosten 2), Nami P-117 (nur {East Blue}) |
+
+`LeaderSonderregel.aus` liest nur Sätze mit „Under the rules of this game". Handelt so ein Satz vom
+Deckbau (Merkmal: „include", vorsorglich auch „contain" und „any number of"), passt aber auf kein
+bekanntes Muster, landet er in `ungeprueft` → die App zeigt *spielbereit\** mit dem Wortlaut statt
+eines stillen „spielbereit". Sätze ohne Deckbezug werden übergangen: Brook OP15-022 („you do not
+lose when your deck has 0 cards") und Enel OP15-058 („your DON!! deck consists of 6 cards") sind
+Spielregeln. In der ersten Fassung lösten beide einen Vorbehalt aus — ein Fehlalarm, gefunden
+durch den Katalogtest unten.
+
+**Geprüft gegen die Wirklichkeit** (`test/deck_rules_real_test.dart`): Wer auf einem Turnier
+platziert war, hatte ein regelkonformes Deck. Meldet die App dort einen Fehler, ist entweder die
+Regel falsch umgesetzt oder die Quelle hat sich verschrieben. Stand 14.11.2026:
+
+| | |
+| --- | --- |
+| Turnierdecks / davon vollständig im Katalog | 5.043 / 4.918 |
+| spielbereit | 4.773 (97,1 %) |
+| Anzahl ≠ 50 | 116 — unvollständig abgeschrieben (56× 49, 17× 48, 14× 51 Karten) |
+| Farbfehler | 19 — Zahlendreher in der Quelle, z. B. „YP Pudding" mit Leader OP08-098 (Kalgara) statt OP08-058 (Pudding) |
+| ohne Leader | 9 — die Leader-Zeile fehlt in der Quelle, die Liste beginnt mit einer Figur |
+| Kopienfehler | 6 — dieselbe Nummer zweimal gelistet (`4xEB04-011 4xEB04-011`) |
+| Leader-Regel verletzt | 0 — bei 85 Decks mit Rayleigh (26), Imu (51) oder Nami P-117 (8) |
+
+Die Kopienregel fiel zunächst bei 37 Decks durch, bis die Ausnahme „any number of this card"
+eingebaut war. Der Test trennt Quell- von Regelfehlern: Er scheitert an jedem Kopienfehler, den
+kein doppelter Eintrag in der Quelle erklärt, an jeder verletzten Leader-Regel und an mehr als 1 %
+Farbfehlern. Ein zweiter Test verlangt, dass **keine** Deckbau-Regel eines Leaders im Katalog
+ungeprüft bleibt — bringt ein neues Set eine neue Formulierung, schlägt er beim nächsten
+Katalog-Update an.
+
+**Nicht geprüft:** Sperrlisten — in den Quelldaten stehen sie nicht. Die App sagt das im Editor
+dazu. Eine Sperrliste wäre die naheliegende Erweiterung (siehe Abschnitt 9).
 
 ### Diagramme
 
@@ -454,6 +509,13 @@ funktioniert. Und kurioserweise: eine kurze Plattform-Kennung (`Mozilla/5.0 (Win
 Win64; x64)`) kommt durch, eine ausführliche Chrome-Kennung wird blockiert. Außerdem drosselt die
 Seite bei schnell aufeinanderfolgenden Abrufen — daher 2,5 Sekunden Pause zwischen den Seiten.
 
+**`| Select-Object -First` beendet Node mitten im Schreiben.** `node scripts/sync-cards.js |
+Select-Object -First 2` sollte nur die Ausgabe kürzen — PowerShell beendet aber den Prozess,
+sobald zwei Zeilen da sind. `assets/decks.json` blieb dabei mit **0 Byte** zurück; aufgefallen ist
+es nur, weil danach ein Test scheiterte. `sync-cards.js` schreibt seitdem erst in eine `.tmp`-Datei,
+vergleicht die Größe und benennt dann um — ein Abbruch hinterlässt die alte Datei, keine halbe.
+Trotzdem: hinter Skripten, die Dateien schreiben, nie `Select-Object -First`; `-Last` liest alles.
+
 **Deckmenge.** Die Seiten enthalten 12.635 Decks, aber nur 1.864 Archetypen. Ungefiltert wären das
 7,9 MB — zu viel fürs Handy. Je Archetyp werden die fünf neuesten behalten (`MAX_JE_ARCHETYP`),
 das ergibt 1,55 MB bei 96 % Kartenabdeckung.
@@ -616,17 +678,14 @@ müssen die Adressen in `price_store.dart` und `deck_model.dart` angepasst werde
 - Ist die Erkennung im Alltag schnell genug, oder nervt die doppelte Bestätigung?
 - Stimmen die Preise gegen den echten Markt?
 
-**Geplant (Stand 2026-11-14), Reihenfolge aus der Nutzerwunsch-Recherche:**
-- v0.12.0 Eigene Decks bauen — Regelprüfung (zweifarbige Leader!), Abgleich mit der Sammlung,
-  fehlende Karten auf die Wunschliste
-
-Erledigt: Import (v0.8.0), Aktualisierung aus der App (v0.9.0), Übersicht mit Wert- und
-Preisverlauf und Set-Vervollständigung (v0.10.0), Wunschliste (v0.11.0).
+**Erledigt aus der Nutzerwunsch-Recherche (Stand 2026-11-14):** Import (v0.8.0), Aktualisierung
+aus der App (v0.9.0), Übersicht mit Wert- und Preisverlauf und Set-Vervollständigung (v0.10.0),
+Wunschliste (v0.11.0), eigene Decks mit Regelprüfung (v0.12.0).
 
 **Naheliegende Erweiterungen:**
-- Sammlungswert über die Zeit verfolgen (Preisdaten kommen ja täglich)
-- Deckbau: eigene Listen anlegen statt nur fremde ansehen
-- Mehrere Karten gleichzeitig scannen (Binderseite)
+- Sperrliste in die Deckprüfung (bräuchte eine gepflegte Datenquelle)
+- Zustand der Karten erfassen (bei 4 von 6 Konkurrenz-Apps vorhanden)
+- Mehrere Karten gleichzeitig scannen (Binderseite) — riskant, die Stärke der App ist Treffsicherheit
 - Die Web-Version nachziehen — sie steht auf dem Stand vor den Tabs
 
 **Bewusst nicht gemacht:**

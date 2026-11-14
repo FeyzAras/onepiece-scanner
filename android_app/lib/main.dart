@@ -15,6 +15,8 @@ import 'collection_view.dart';
 import 'deck_model.dart';
 import 'decks_view.dart';
 import 'import_view.dart';
+import 'my_decks.dart';
+import 'my_decks_view.dart';
 import 'overview_view.dart';
 import 'price_history.dart';
 import 'price_store.dart';
@@ -98,6 +100,9 @@ class _HomePageState extends State<HomePage> {
 
   /// Gesuchte Karten. Speichert bei jeder echten Aenderung mit der Sammlung zusammen.
   late final Wunschliste _wunschliste = Wunschliste(onAenderung: _persist);
+
+  /// Selbst gebaute Decks - ebenso.
+  late final MeineDecks _meineDecks = MeineDecks(onAenderung: _persist);
 
   @override
   void initState() {
@@ -225,6 +230,7 @@ class _HomePageState extends State<HomePage> {
     });
     // Nach der Sammlung und ohne Speichervorgang - laden ist keine Aenderung
     _wunschliste.laden(state.wishlist);
+    _meineDecks.laden(state.myDecks);
 
     await _loadPrices();
     _migrateLegacyChoices(state.legacyPriceAmounts, matcher);
@@ -284,6 +290,7 @@ class _HomePageState extends State<HomePage> {
         priceChoice: _priceChoice,
         unreadableScans: _unreadableScans,
         wishlist: _wunschliste.eintraege,
+        myDecks: _meineDecks.decks,
       ));
 
   /// Alle Cardmarket-Versionen dieser Kartennummer - bevorzugt tagesaktuell,
@@ -740,6 +747,12 @@ class _HomePageState extends State<HomePage> {
                 ownedCount: _ownedCount,
                 cardOf: _cardOf,
                 aufWunschliste: _aufWunschliste,
+                umgebung: DeckUmgebung(
+                  decks: _meineDecks,
+                  matcher: _matcher,
+                  besitzZurNummer: _ownedCount,
+                  aufWunschliste: _aufWunschliste,
+                ),
                 onRefresh: _loadDecks,
               ),
             ],

@@ -100,7 +100,7 @@ anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsa
 
 ## 3. Die Liste
 
-Die App hat unten drei Tabs: **Scannen**, **Sammlung** und **Decks**.
+Die App hat unten vier Reiter: **Scannen**, **Sammlung**, **Übersicht** und **Decks**.
 
 ### Ordner
 
@@ -124,13 +124,17 @@ Karte mit **anderem Artwork** gibt — einen Knopf zum Wechseln. Auf das Bild ti
 
 ### Decks
 
+Oben schaltest du um zwischen **Turnierdecks** (fremde Decklisten, gleich hier beschrieben) und
+**Meine Decks** (selbst bauen, siehe [Eigene Decks](#eigene-decks-ab-version-0120)).
+
 Turnierdecks aus **allen Sets von OP01 bis OP17**, in englischem und japanischem Format — rund
 4.900 Decklisten, 1.864 verschiedene Deck-Archetypen. Je Archetyp sind die fünf neuesten Listen
 dabei; mehr wäre nur Wiederholung desselben Decks.
 
 Für jedes Deck zeigt ein Balken, **wie viele Karten davon du schon besitzt.** Antippen zeigt die
 vollständige Deckliste, Karte für Karte mit „2/4" — also wie viele du hast und wie viele das Deck
-braucht. Grün heißt vollständig.
+braucht. Grün heißt vollständig. Darunter: **„Als eigenes Deck übernehmen"** (eine Kopie zum
+Umbauen) und **„Fehlende Karten auf die Wunschliste"**.
 
 Oben lässt sich nach Deck, Spieler, Set oder Turnier suchen, nach Format filtern (Englisch /
 Japanisch) und auf Decks einschränken, von denen du mindestens die Hälfte besitzt.
@@ -216,8 +220,8 @@ derselben Karte in der Hand hältst. Beide tragen dieselbe Nummer, und am Bild s
 
 ### Übersicht (ab Version 0.10.0)
 
-Der vierte Reiter unten. Er braucht beim ersten Öffnen kurz Internet, danach geht er auch offline
-mit dem zuletzt geladenen Stand.
+Der dritte Reiter unten, zwischen Sammlung und Decks. Er braucht beim ersten Öffnen kurz Internet,
+danach geht er auch offline mit dem zuletzt geladenen Stand.
 
 **Wert deiner Sammlung** — oben die große Zahl ist der heutige Wert, darunter die Veränderung
 seit 7 und seit 30 Tagen (▲ grün = gestiegen, ▼ rot = gefallen). Die Kurve zeigt, was deine
@@ -265,6 +269,62 @@ der Normalversion** (zum Spielen ist das Artwork egal) — umgekehrt nicht: Wer 
 will die Alt-Art.
 
 Die Wunschliste steckt in der **Sicherung** mit drin und kommt beim Wiederherstellen zurück.
+
+### Eigene Decks (ab Version 0.12.0)
+
+Im Reiter **Decks** oben auf **Meine Decks** umschalten. Drei Wege zu einem Deck:
+
+| Weg | So geht's |
+| --- | --- |
+| **Neues Deck** | Leader aussuchen (Suche nach Name, Nummer oder Farbe), dann „Karten hinzufügen" |
+| **Liste einfügen** | eine Deckliste aus der Zwischenablage, etwa von einer Deck-Seite (`1xOP01-001 4xOP01-013 …`). Der Leader wird darin erkannt |
+| **Turnierdeck als Vorlage** | **Turnierdecks** → ein Deck antippen → **„Als eigenes Deck übernehmen"**, danach nach Belieben umbauen |
+
+**Im Deck siehst du, von oben nach unten:**
+
+- den **Leader**, mit „Ändern" austauschbar
+- die **Prüfung**: „38 / 50 Karten" mit Balken. Stimmt alles, steht dort ein grüner Haken und
+  *spielbereit*. Sonst steht darunter in Worten, was fehlt oder nicht passt
+- die **Kostenkurve**: wie viele Karten je Kosten 0 bis 10+, dazu Charaktere, Events, Stages und
+  die Counter-Werte
+- den **Abgleich mit der Sammlung**: „41 von 50 Karten in deiner Sammlung" — jedes Artwork zählt.
+  Ein Knopf setzt die fehlenden auf die **Wunschliste**
+- die **Karten**, nach Typ und Kosten geordnet, Anzahl mit − und +. Passt eine Karte nicht, steht
+  es rot darunter, etwa „Farbe passt nicht zum Leader"
+
+Oben rechts schickt das **Teilen-Symbol** die Liste im Deckformat, eine Zeile je Karte
+(`4xOP01-013`), der Leader als `1x` zuerst — das verstehen Simulatoren und Deck-Seiten, und die
+App liest es selbst wieder ein. Unter ⋮ stehen
+**Umbenennen** (geht auch durch Antippen des Namens) und **Löschen**. Löschen entfernt nur die
+Liste, nicht die Karten deiner Sammlung.
+
+**„Karten hinzufügen"** zeigt nur, was zum Leader passt: seine Farben, und bei Leadern mit eigener
+Regel nur erlaubte Karten. Bei Karten, die du besitzt, steht „×2 im Besitz" dabei. Ist eine Nummer
+schon viermal im Deck, ist das + ausgegraut.
+
+**Was geprüft wird** — nach den offiziellen Regeln (Comprehensive Rules 1.2.1):
+
+| Regel | Im Detail |
+| --- | --- |
+| 1 Leader, genau 50 Karten | der Leader zählt nicht zu den 50 |
+| höchstens 4 je Kartennummer | Alt-Arts haben dieselbe Nummer und zählen mit: 2× normal + 2× Alt-Art = 4 |
+| nur Farben des Leaders | zweifarbige Leader erlauben beide Farben. Eine zweifarbige Karte braucht **beide** Farben im Leader |
+| Karten ohne Kopiengrenze | z. B. Pacifista (OP01-075) — auf der Karte steht, dass beliebig viele erlaubt sind |
+| Regeln einzelner Leader | Rayleigh (OP12-001): keine Karten ab Kosten 5 · Imu (OP13-079): keine Events ab Kosten 2 · Nami (P-117): nur {East Blue}-Karten |
+
+> **Nicht geprüft: Sperrlisten** (verbotene oder begrenzte Karten). Die stehen nicht in den Daten
+> der App. Vor einem Turnier die aktuelle Liste auf der offiziellen Seite ansehen.
+
+Kommt ein neuer Leader mit einer Deckbau-Regel heraus, die die App noch nicht kennt, steht dort
+*spielbereit\** mit Stern — samt dem Wortlaut der Regel zum Selbstprüfen. Die App sagt also nie
+stillschweigend „spielbereit", wenn sie etwas nicht prüfen konnte.
+
+**Wie verlässlich ist die Prüfung?** Getestet an **4.918 echten Turnierdecks**: 97 % gelten als
+spielbereit. Bei den übrigen liegt der Fehler nachweislich in der abgeschriebenen Liste der Quelle
+— 49 statt 50 Karten, dieselbe Karte zweimal gelistet, fehlende Leader-Zeile, Zahlendreher in
+einer Nummer.
+
+Deine Decks stecken in der **Sicherung** mit drin und kommen beim Wiederherstellen zurück.
 
 ---
 

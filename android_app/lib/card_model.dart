@@ -109,6 +109,9 @@ class OpCard {
 
   /// Counter-Wert (bei Figuren 1000 oder 2000), sonst null.
   final int? counter;
+
+  /// Typen wie "East Blue" oder "Straw Hat Crew".
+  final List<String> types;
   final String effect;
   final String? img;
   final CardPrice? price;
@@ -152,6 +155,7 @@ class OpCard {
     this.power,
     this.costLife,
     this.counter,
+    this.types = const [],
     required this.effect,
     this.img,
     this.price,
@@ -171,6 +175,7 @@ class OpCard {
         power: (j['power'] as num?)?.toInt(),
         costLife: (j['costLife'] as num?)?.toInt(),
         counter: (j['counter'] as num?)?.toInt(),
+        types: (j['types'] as List?)?.map((e) => '$e').toList() ?? const [],
         effect: (j['effect'] ?? '') as String,
         img: j['img'] as String?,
         price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),

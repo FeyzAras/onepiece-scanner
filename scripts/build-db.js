@@ -28,6 +28,9 @@ function normalize(card) {
     power: card.power && card.power !== "-" ? Number(card.power) : null,
     costLife: costLife !== null ? Number(costLife) : null,
     counter: card.counter && card.counter !== "-" ? Number(card.counter) || null : null,
+    // Typen wie "East Blue" oder "Straw Hat Crew" - manche Leader erlauben im Deck nur
+    // Karten eines Typs (z.B. P-117 Nami: nur {East Blue}).
+    types: Array.isArray(card.types) ? card.types.filter(Boolean) : [],
     effect: card.effects || "",
     img: card.image_url || null,
   };

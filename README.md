@@ -76,6 +76,12 @@ Vorschau, was erkannt wurde und was nicht. Ein Fehlgriff lässt sich rückgängi
 Listen aus 1.864 Archetypen. Für jedes Deck ein Balken, wie viele Karten davon du besitzt; in der
 Deckliste steht je Karte „2/4" — was du hast und was das Deck braucht.
 
+**Eigene Decks** — Leader wählen, Karten hinzufügen (nur was zum Leader passt), laufende Prüfung
+nach den offiziellen Regeln: 50 Karten, höchstens 4 je Nummer samt Alt-Arts, Farben des Leaders,
+Sonderregeln einzelner Leader. Dazu Kostenkurve, Abgleich mit der Sammlung, fehlende Karten auf
+die Wunschliste, Teilen und Einfügen als Deckliste. Ein Turnierdeck lässt sich als Vorlage
+übernehmen. Die Prüfung ist an 4.918 echten Turnierdecks getestet.
+
 **Japanische Karten** — funktionieren ohne Zusatzschritt, weil die Kartennummer auch dort
 lateinisch aufgedruckt ist. 115 Karten, die nie auf Englisch erschienen sind, sind zusätzlich im
 Katalog und entsprechend gekennzeichnet.
@@ -105,7 +111,7 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 228 Tests, laufen ohne Gerät
+flutter test                        # 267 Tests, laufen ohne Gerät
 npm run test:data                   # 10 Tests der Datenaufbereitung (aus dem Hauptordner)
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
@@ -157,6 +163,8 @@ oder onepiecetopdecks.com. One Piece und alle Kartenbilder gehören ihren jeweil
   (Trend, Durchschnitt, Tiefstpreis). Verkäuferland, Kartensprache und Zustand gibt es bei
   Cardmarket nur auf Angebotsebene, und dorthin führt nur die API — die ist für neue Anträge
   geschlossen.
+- **Deckprüfung ohne Sperrliste.** Verbotene oder begrenzte Karten stehen nicht in den Daten;
+  vor einem Turnier die offizielle Liste ansehen.
 - **Artwork-Erkennung unter Kamerabedingungen ungetestet** — die Logik ist an 150 echten
   Alt-Art-Karten geprüft, aber mit Katalogbildern, nicht mit Fotos bei Zimmerlicht.
 - Die Web-Version hat die neuen Tabs (Sammlung, Decks) nicht; sie ist die ältere, einfachere Fassung.

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'card_model.dart';
 import 'deck_model.dart';
+import 'my_decks.dart';
+import 'my_decks_view.dart';
 import 'widgets.dart';
 
 /// Wie gut ein Deck mit der eigenen Sammlung abgedeckt ist.
@@ -26,6 +28,9 @@ class DecksView extends StatefulWidget {
   /// Fehlende Deck-Karten vormerken (liegt in main.dart). Null = ohne Wunschliste.
   final void Function(Map<String, int> karten)? aufWunschliste;
 
+  /// Eigene Decks. Null = nur Turnierdecks.
+  final DeckUmgebung? umgebung;
+
   const DecksView({
     super.key,
     required this.data,
@@ -34,6 +39,7 @@ class DecksView extends StatefulWidget {
     required this.cardOf,
     required this.onRefresh,
     this.aufWunschliste,
+    this.umgebung,
   });
 
   @override
@@ -47,6 +53,9 @@ class _DecksViewState extends State<DecksView> {
 
   /// null = beide Formate, sonst 'en' oder 'jp'
   String? _format;
+
+  /// false = Turnierdecks, true = eigene Decks
+  bool _meine = false;
 
   @override
   void dispose() {
@@ -66,6 +75,44 @@ class _DecksViewState extends State<DecksView> {
 
   @override
   Widget build(BuildContext context) {
+    final umgebung = widget.umgebung;
+    return Column(
+      children: [
+        if (umgebung != null) _umschalter(umgebung),
+        Expanded(
+          child: _meine && umgebung != null ? MeineDeckListe(umgebung: umgebung) : _turnierdecks(oben: umgebung == null),
+        ),
+      ],
+    );
+  }
+
+  Widget _umschalter(DeckUmgebung umgebung) {
+    return Container(
+      width: double.infinity,
+      color: kSurface,
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 8, left: 14, right: 14, bottom: 4),
+      child: ListenableBuilder(
+        listenable: umgebung.decks,
+        builder: (context, _) => SegmentedButton<bool>(
+          showSelectedIcon: false,
+          segments: [
+            const ButtonSegment(value: false, label: Text('Turnierdecks'), icon: Icon(Icons.emoji_events_outlined, size: 18)),
+            ButtonSegment(
+              value: true,
+              label: Text('Meine Decks${umgebung.decks.decks.isEmpty ? '' : ' (${umgebung.decks.decks.length})'}'),
+              icon: const Icon(Icons.construction_outlined, size: 18),
+            ),
+          ],
+          selected: {_meine},
+          onSelectionChanged: (s) => setState(() => _meine = s.first),
+        ),
+      ),
+    );
+  }
+
+  /// [oben]: true, wenn kein Umschalter darueber steht - dann braucht der Kopf den
+  /// Abstand zur Statusleiste selbst.
+  Widget _turnierdecks({required bool oben}) {
     final data = widget.data;
     if (data == null) {
       return Center(
@@ -107,7 +154,7 @@ class _DecksViewState extends State<DecksView> {
 
     return Column(
       children: [
-        _header(data, shown.length),
+        _header(data, shown.length, oben: oben),
         Expanded(
           child: shown.isEmpty
               ? const Center(child: Padding(padding: EdgeInsets.all(32), child: Text('Keine Decks gefunden.', style: TextStyle(color: kDim))))
@@ -121,9 +168,9 @@ class _DecksViewState extends State<DecksView> {
     );
   }
 
-  Widget _header(DeckData data, int count) {
+  Widget _header(DeckData data, int count, {bool oben = true}) {
     return Container(
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 10, left: 14, right: 14, bottom: 8),
+      padding: EdgeInsets.only(top: oben ? MediaQuery.of(context).padding.top + 10 : 4, left: 14, right: 14, bottom: 8),
       color: kSurface,
       child: Column(
         children: [
@@ -319,6 +366,17 @@ class _DecksViewState extends State<DecksView> {
                 ],
               ),
             ),
+            if (widget.umgebung != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => _alsEigenesDeck(ctx, deck),
+                  icon: const Icon(Icons.copy_all_outlined, size: 18),
+                  label: const Text('Als eigenes Deck übernehmen'),
+                ),
+              ),
+            ],
             if (cov.missing > 0 && widget.aufWunschliste != null) ...[
               const SizedBox(height: 10),
               SizedBox(
@@ -338,6 +396,21 @@ class _DecksViewState extends State<DecksView> {
         ),
       ),
     );
+  }
+
+  /// Turnierdeck als Vorlage: Kopie unter "Meine Decks", dann direkt in den Editor.
+  void _alsEigenesDeck(BuildContext sheetContext, Deck turnier) {
+    final umgebung = widget.umgebung;
+    if (umgebung == null) return;
+    final vorlage = DeckText.ausTurnierdeck(turnier, widget.cardOf);
+    final id = umgebung.decks.anlegen(
+      name: turnier.player != null && turnier.player!.isNotEmpty ? '${turnier.name} (${turnier.player})' : turnier.name,
+      leaderId: vorlage.leaderId,
+      karten: vorlage.karten,
+    );
+    Navigator.of(sheetContext).pop();
+    setState(() => _meine = true);
+    DeckEditorSeite.oeffnen(context, umgebung, id);
   }
 
   /// Was zum Deck fehlt, als Wunschliste: je Nummer die Differenz zwischen Bedarf und
