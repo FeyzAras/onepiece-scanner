@@ -6,6 +6,8 @@ import 'line_chart.dart';
 import 'price_history.dart';
 import 'set_progress.dart';
 import 'widgets.dart';
+import 'wishlist.dart';
+import 'wishlist_view.dart';
 
 /// Vierter Reiter: Wert der Sammlung ueber die Zeit und Fortschritt je Set.
 ///
@@ -21,6 +23,12 @@ class OverviewView extends StatefulWidget {
   /// true, solange der Reiter sichtbar ist.
   final bool aktiv;
 
+  final Wunschliste wunschliste;
+  final OpCard? Function(String id) karteVon;
+
+  /// Mehrere Karten vormerken, mit Rueckmeldung (liegt in main.dart).
+  final void Function(Map<String, int> karten) aufWunschliste;
+
   const OverviewView({
     super.key,
     required this.entries,
@@ -29,6 +37,9 @@ class OverviewView extends StatefulWidget {
     required this.setInfos,
     required this.historyStore,
     required this.aktiv,
+    required this.wunschliste,
+    required this.karteVon,
+    required this.aufWunschliste,
   });
 
   @override
@@ -113,6 +124,12 @@ class _OverviewViewState extends State<OverviewView> {
           const Text('Übersicht', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           _wertKarte(),
+          const SizedBox(height: 12),
+          WunschlistenKarte(
+            wunschliste: widget.wunschliste,
+            karteVon: widget.karteVon,
+            preisVon: widget.priceOf,
+          ),
           const SizedBox(height: 22),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -269,7 +286,12 @@ class _OverviewViewState extends State<OverviewView> {
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => SetDetailView(fortschritt: s, priceOf: widget.priceOf),
+        builder: (_) => SetDetailView(
+          fortschritt: s,
+          priceOf: widget.priceOf,
+          wunschliste: widget.wunschliste,
+          aufWunschliste: widget.aufWunschliste,
+        ),
       )),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 2),
@@ -323,8 +345,16 @@ class _OverviewViewState extends State<OverviewView> {
 class SetDetailView extends StatelessWidget {
   final SetFortschritt fortschritt;
   final double Function(OpCard card) priceOf;
+  final Wunschliste wunschliste;
+  final void Function(Map<String, int> karten) aufWunschliste;
 
-  const SetDetailView({super.key, required this.fortschritt, required this.priceOf});
+  const SetDetailView({
+    super.key,
+    required this.fortschritt,
+    required this.priceOf,
+    required this.wunschliste,
+    required this.aufWunschliste,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -379,8 +409,17 @@ class SetDetailView extends StatelessWidget {
                 ),
               ),
             const SizedBox(height: 4),
-            const Text('Günstigste zuerst, zum heutigen Cardmarket-Trendpreis.',
+            const Text('Günstigste zuerst, zum heutigen Cardmarket-Trendpreis. ☆ merkt eine Karte vor.',
                 style: TextStyle(fontSize: 11, color: kDim)),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => aufWunschliste({for (final k in s.fehlend) k.id: 1}),
+                icon: const Icon(Icons.star_border, size: 18),
+                label: Text('Alle ${s.fehlend.length} fehlenden auf die Wunschliste'),
+              ),
+            ),
             const SizedBox(height: 10),
             for (final karte in s.fehlend) _karteZeile(context, karte),
           ],
@@ -410,6 +449,7 @@ class SetDetailView extends StatelessWidget {
             ),
             Text(preis > 0 ? formatEuro(preis) : 'kein Preis',
                 style: TextStyle(fontSize: 12.5, color: preis > 0 ? Colors.white : kDim)),
+            WunschStern(wunschliste: wunschliste, card: karte),
           ],
         ),
       ),

@@ -6,6 +6,8 @@ import 'collection_store.dart';
 import 'line_chart.dart';
 import 'price_history.dart';
 import 'widgets.dart';
+import 'wishlist.dart';
+import 'wishlist_view.dart';
 
 /// Ein Eintrag der Sammlung: eine Karte, wie oft sie gescannt wurde und in welchem Ordner.
 class CollectionEntry {
@@ -84,12 +86,16 @@ class CollectionView extends StatefulWidget {
   /// Preisverlaeufe fuer die Kurve in den Kartendetails. Ohne ihn keine Kurve.
   final HistoryStore? historyStore;
 
+  /// Fuer den Stern in den Kartendetails - etwa, um weitere Exemplare zu suchen.
+  final Wunschliste? wunschliste;
+
   const CollectionView({
     super.key,
     required this.entries,
     required this.folders,
     this.loadFailed = false,
     this.historyStore,
+    this.wunschliste,
     required this.onRemoveOne,
     required this.onSwitchArtwork,
     required this.variantsOf,
@@ -632,7 +638,17 @@ class _CollectionViewState extends State<CollectionView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(card.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(card.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+                            ),
+                            if (widget.wunschliste != null)
+                              WunschStern(wunschliste: widget.wunschliste!, card: card),
+                          ],
+                        ),
                         const SizedBox(height: 4),
                         Text('${card.id} · ${card.rarity} · ${card.cardType}',
                             style: const TextStyle(color: kDim, fontSize: 12.5)),

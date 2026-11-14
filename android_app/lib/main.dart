@@ -23,6 +23,7 @@ import 'set_progress.dart';
 import 'update_service.dart';
 import 'update_view.dart';
 import 'widgets.dart';
+import 'wishlist.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,6 +95,9 @@ class _HomePageState extends State<HomePage> {
   /// Ein gemeinsamer Speicher fuer die Preisverlaeufe - Uebersicht und Kartendetails
   /// teilen sich, was einmal geladen ist.
   final HistoryStore _historyStore = HistoryStore();
+
+  /// Gesuchte Karten. Speichert bei jeder echten Aenderung mit der Sammlung zusammen.
+  late final Wunschliste _wunschliste = Wunschliste(onAenderung: _persist);
 
   @override
   void initState() {
@@ -219,6 +223,8 @@ class _HomePageState extends State<HomePage> {
         ..clear()
         ..addAll(restored);
     });
+    // Nach der Sammlung und ohne Speichervorgang - laden ist keine Aenderung
+    _wunschliste.laden(state.wishlist);
 
     await _loadPrices();
     _migrateLegacyChoices(state.legacyPriceAmounts, matcher);
@@ -277,6 +283,7 @@ class _HomePageState extends State<HomePage> {
         scans: [..._collection.map((e) => e.toStored()), ..._unresolvedScans],
         priceChoice: _priceChoice,
         unreadableScans: _unreadableScans,
+        wishlist: _wunschliste.eintraege,
       ));
 
   /// Alle Cardmarket-Versionen dieser Kartennummer - bevorzugt tagesaktuell,
@@ -333,6 +340,25 @@ class _HomePageState extends State<HomePage> {
       );
     });
     _persist();
+
+    // Gesuchte Karte gefunden? Dann von der Wunschliste streichen.
+    final gestrichen = _wunschliste.abhaken(result.card);
+    if (gestrichen != null) {
+      final rest = _wunschliste.anzahl(gestrichen);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('★ Von der Wunschliste: ${result.card.name}'
+            '${rest > 0 ? ' — noch $rest gesucht' : ''}'),
+        duration: const Duration(seconds: 3),
+      ));
+    }
+  }
+
+  /// Mehrere Karten auf einmal vormerken, mit Rueckmeldung.
+  void _aufWunschliste(Map<String, int> karten) {
+    final neu = _wunschliste.hinzufuegen(karten);
+    _melden(neu == 0
+        ? 'Diese Karten stehen schon auf der Wunschliste.'
+        : '$neu Karte(n) auf die Wunschliste gesetzt.');
   }
 
   void _removeOne(OpCard card, String folderId) {
@@ -695,6 +721,7 @@ class _HomePageState extends State<HomePage> {
                 onChoosePrice: _choosePrice,
                 priceAsOf: _priceAsOf,
                 historyStore: _historyStore,
+                wunschliste: _wunschliste,
               ),
               OverviewView(
                 entries: _collection,
@@ -703,12 +730,16 @@ class _HomePageState extends State<HomePage> {
                 setInfos: _setInfos,
                 historyStore: _historyStore,
                 aktiv: _tab == 2,
+                wunschliste: _wunschliste,
+                karteVon: (id) => _matcher?.byId(id),
+                aufWunschliste: _aufWunschliste,
               ),
               DecksView(
                 data: _decks,
                 loading: _decksLoading,
                 ownedCount: _ownedCount,
                 cardOf: _cardOf,
+                aufWunschliste: _aufWunschliste,
                 onRefresh: _loadDecks,
               ),
             ],

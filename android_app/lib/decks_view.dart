@@ -23,6 +23,9 @@ class DecksView extends StatefulWidget {
   final OpCard? Function(String baseId) cardOf;
   final VoidCallback onRefresh;
 
+  /// Fehlende Deck-Karten vormerken (liegt in main.dart). Null = ohne Wunschliste.
+  final void Function(Map<String, int> karten)? aufWunschliste;
+
   const DecksView({
     super.key,
     required this.data,
@@ -30,6 +33,7 @@ class DecksView extends StatefulWidget {
     required this.ownedCount,
     required this.cardOf,
     required this.onRefresh,
+    this.aufWunschliste,
   });
 
   @override
@@ -315,6 +319,17 @@ class _DecksViewState extends State<DecksView> {
                 ],
               ),
             ),
+            if (cov.missing > 0 && widget.aufWunschliste != null) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => widget.aufWunschliste!(_fehlende(deck)),
+                  icon: const Icon(Icons.star_border, size: 18),
+                  label: Text('${cov.missing} fehlende Karten auf die Wunschliste'),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             const Text('Decklist', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
@@ -323,6 +338,21 @@ class _DecksViewState extends State<DecksView> {
         ),
       ),
     );
+  }
+
+  /// Was zum Deck fehlt, als Wunschliste: je Nummer die Differenz zwischen Bedarf und
+  /// Besitz. Eingetragen wird die Normalversion - zum Spielen ist das Artwork egal, und
+  /// eine gescannte Alt-Art hakt den Wunsch trotzdem ab.
+  Map<String, int> _fehlende(Deck deck) {
+    final ergebnis = <String, int>{};
+    for (final c in deck.cards) {
+      final fehlt = c.qty - widget.ownedCount(c.id);
+      if (fehlt <= 0) continue;
+      final karte = widget.cardOf(c.id);
+      if (karte == null) continue;
+      ergebnis[karte.id] = fehlt;
+    }
+    return ergebnis;
   }
 
   Widget _deckCardRow(DeckCard entry) {

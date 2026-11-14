@@ -76,6 +76,12 @@ class CollectionState {
   /// wurde dann unter einem Sicherungsschluessel abgelegt und ist wiederherstellbar.
   final bool loadFailed;
 
+  /// Gesuchte Karten: Karten-ID -> wie viele Exemplare noch fehlen.
+  ///
+  /// Liegt im selben Datensatz wie die Sammlung und steckt damit ohne Zutun in der
+  /// JSON-Sicherung, im Wiederherstellen und im Rueckgaengig nach einem Import.
+  final Map<String, int> wishlist;
+
   const CollectionState({
     required this.folders,
     required this.activeFolderId,
@@ -84,6 +90,7 @@ class CollectionState {
     this.legacyPriceAmounts = const {},
     this.unreadableScans = const [],
     this.loadFailed = false,
+    this.wishlist = const {},
   });
 }
 
@@ -149,6 +156,16 @@ class CollectionStore {
         if (amount != null && !choice.containsKey(key)) legacy[key] = amount;
       });
 
+      // Aeltere Staende kennen keine Wunschliste - dann bleibt sie leer
+      final wunsch = <String, int>{};
+      final rohWunsch = map['wishlist'];
+      if (rohWunsch is Map) {
+        rohWunsch.forEach((key, value) {
+          final n = (value is num) ? value.toInt() : null;
+          if (n != null && n > 0) wunsch['$key'] = n;
+        });
+      }
+
       return CollectionState(
         folders: folders.isEmpty ? _defaultFolders() : folders,
         activeFolderId: (map['active'] as String?) ?? defaultFolderId,
@@ -156,6 +173,7 @@ class CollectionStore {
         priceChoice: choice,
         legacyPriceAmounts: legacy,
         unreadableScans: unreadable,
+        wishlist: wunsch,
       );
     } catch (_) {
       return null;
@@ -222,6 +240,7 @@ class CollectionStore {
         'scans': state.scans.map((s) => s.toJson()).toList(),
         'priceChoice': state.priceChoice,
         if (state.unreadableScans.isNotEmpty) 'unknown': state.unreadableScans,
+        if (state.wishlist.isNotEmpty) 'wishlist': state.wishlist,
       });
 
   static Future<void> save(CollectionState state) async {

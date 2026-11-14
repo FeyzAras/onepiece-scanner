@@ -9,7 +9,7 @@ publish_to: 'none'
 # Beim Bauen mit --split-per-abi addiert Flutter 1000 * ABI, arm64 ergibt also 2800.
 # Das muss groesser bleiben als der bisher veroeffentlichte Wert 2001, sonst lehnt
 # Android die Installation als Downgrade ab.
-version: 0.10.0+1000
+version: 0.11.0+1100
 
 environment:
   sdk: ^3.13.5

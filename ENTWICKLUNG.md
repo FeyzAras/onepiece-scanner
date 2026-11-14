@@ -13,7 +13,7 @@ in [README.md](README.md).
 # Android-App bauen
 cd android_app
 flutter pub get
-flutter test                                  # 208 Tests, laufen ohne Gerät
+flutter test                                  # 228 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi   # -> build/app/outputs/flutter-apk/
 
 # Daten aktualisieren
@@ -69,12 +69,14 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     price_history.dart  Preisverlauf je Set laden (Datei-Zwischenspeicher), Wertverlauf rechnen
     set_progress.dart   Set-Fortschritt rechnen, Set-Namen lesen — ohne UI
     line_chart.dart     Liniendiagramm, Preiskurve je Karte, Fortschrittsbalken (CustomPainter)
+    wishlist.dart       Wunschliste als gemeinsames Modell (ChangeNotifier) — ohne UI
+    wishlist_view.dart  Wunschlisten-Seite, Zusammenfassung, Stern zum Vormerken
     decks_view.dart     Deck-Tab mit Sammlungsabgleich
     deck_model.dart     Decklisten einlesen und nachladen
     price_store.dart    Tagesaktuelle Preise nachladen
     widgets.dart        Gemeinsame Bausteine und Farben (inkl. geprüfter Diagrammfarben)
   assets/             cards.json, decks.json, sets.json (in die App eingebacken)
-  test/               208 Tests, laufen ohne Gerät
+  test/               228 Tests, laufen ohne Gerät
   android/app/src/main/kotlin/…/InstallChannel.kt, InstallStatusReceiver.kt
                       PackageInstaller-Sitzung für die Aktualisierung aus der App
 
@@ -144,6 +146,21 @@ vorwärts gefüllt (sonst Einbrüche, die es am Markt nie gab); vor dem ersten b
 eine Karte nicht mit. **Bekannte Grenze:** Gerechnet wird mit der automatisch zugeordneten
 Druckvariante. Für vom Nutzer gewählte Versionen gibt es keinen Verlauf — die Versionslisten
 (`options`) werden nicht archiviert. Die App sagt das dazu.
+
+### Wunschliste
+
+Ein gemeinsames Modell (`Wunschliste` in `wishlist.dart`, ein `ChangeNotifier`) für alle Ansichten.
+Ein gesetzter Stern erscheint dadurch sofort überall — auch in einer gerade geöffneten
+Set-Ansicht, die als eigene Seite aufliegt und sonst nichts von der Änderung mitbekäme.
+
+| Entscheidung | Begründung |
+| --- | --- |
+| Gespeichert in `collection_v2` unter `wishlist` | steckt damit ohne Zutun in der JSON-Sicherung, im Wiederherstellen und im Rückgängig nach einem Import. Leere Liste wird nicht geschrieben; ältere Stände ohne das Feld laden weiter |
+| Speichern über `onAenderung`, **nicht** beim `laden()` | sonst löste schon das Einlesen beim Start einen Speichervorgang aus — womöglich bevor die Sammlung selbst geladen ist |
+| Mehrfaches Hinzufügen: **größere** Anzahl statt Summe | wer eine Karte einmal fürs Set und dreimal fürs Deck braucht, braucht drei, nicht vier |
+| Alt-Art hakt den Wunsch nach der Normalversion ab, nicht umgekehrt | fürs Spielen ist das Artwork egal; wer die Alt-Art sucht, will aber die Alt-Art |
+| Deck-Wünsche: Normalversion, Anzahl = Bedarf − Besitz | Besitz zählt jedes Artwork (`ownedCount` über die Basisnummer) |
+| Teilen im Deckformat `4xOP01-001` | versteht jeder Händler, und der eigene Import liest es wieder ein (Test vorhanden) |
 
 ### Diagramme
 
@@ -600,11 +617,11 @@ müssen die Adressen in `price_store.dart` und `deck_model.dart` angepasst werde
 - Stimmen die Preise gegen den echten Markt?
 
 **Geplant (Stand 2026-11-14), Reihenfolge aus der Nutzerwunsch-Recherche:**
-- v0.11.0 Wunschliste — Karten vormerken, Kosten, als Deckliste teilen, beim Scannen abhaken
-- v0.12.0 Eigene Decks bauen — Regelprüfung (zweifarbige Leader!), Abgleich mit der Sammlung
+- v0.12.0 Eigene Decks bauen — Regelprüfung (zweifarbige Leader!), Abgleich mit der Sammlung,
+  fehlende Karten auf die Wunschliste
 
 Erledigt: Import (v0.8.0), Aktualisierung aus der App (v0.9.0), Übersicht mit Wert- und
-Preisverlauf und Set-Vervollständigung (v0.10.0).
+Preisverlauf und Set-Vervollständigung (v0.10.0), Wunschliste (v0.11.0).
 
 **Naheliegende Erweiterungen:**
 - Sammlungswert über die Zeit verfolgen (Preisdaten kommen ja täglich)

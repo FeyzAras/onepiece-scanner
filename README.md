@@ -63,6 +63,10 @@ seit 7 und 30 Tagen. Je Set der Fortschritt („OP01 · Romance Dawn — 87 von 
 getrennt gezählt, mit den fehlenden Karten und was sie kosten. In den Kartendetails die
 Preiskurve jeder einzelnen Karte.
 
+**Wunschliste** — Karten vormerken, mit den Kosten zum heutigen Preis. Fehlende Karten eines
+Sets oder Turnierdecks mit einem Tipp übernehmen, als Deckliste an Händler schicken. Scannst du
+eine gesuchte Karte, wird sie automatisch abgehakt.
+
 **Listen einlesen** — Sicherungsdatei, eigener CSV-Export, Deckliste (`4xOP01-001 …`), eine
 Nummer je Zeile oder ein Cardmarket-Bestandsexport. Das Format wird selbst erkannt, schief
 geschriebene Nummern (`OP1-1`, `OPO1-001`) werden korrigiert, und vor dem Übernehmen zeigt eine
@@ -101,7 +105,7 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 208 Tests, laufen ohne Gerät
+flutter test                        # 228 Tests, laufen ohne Gerät
 npm run test:data                   # 10 Tests der Datenaufbereitung (aus dem Hauptordner)
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk

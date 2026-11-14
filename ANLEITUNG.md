@@ -239,6 +239,33 @@ Preis jetzt sein Verlauf, mit dem tiefsten und höchsten Stand.
 > zugeordnet hat. Hast du bei einer Karte eine andere Version gewählt, steht ein Hinweis dabei.
 > Nur auf Japanisch erschienene Karten zählen nicht zur Set-Gesamtzahl.
 
+### Wunschliste (ab Version 0.11.0)
+
+Karten, die du noch suchst — mit den Kosten zum heutigen Preis. Sie steht in der **Übersicht**
+direkt unter dem Sammlungswert. Antippen öffnet die ganze Liste.
+
+**So kommen Karten drauf:**
+
+| Wo | Was passiert |
+| --- | --- |
+| Übersicht → ein Set antippen | ☆ neben jeder fehlenden Karte, oder **„Alle fehlenden auf die Wunschliste"** |
+| Decks → ein Turnierdeck antippen | **„Fehlende Karten auf die Wunschliste"** — mit der Anzahl, die dir noch fehlt (das Deck braucht 4, du hast 1 → 3 gesucht) |
+| Sammlung → eine Karte antippen | ☆ neben dem Namen, etwa um weitere Exemplare zu suchen |
+
+Steht eine Karte schon drauf, zählt die **größere** Anzahl, nicht die Summe: Brauchst du sie
+einmal fürs Set und dreimal fürs Deck, suchst du drei.
+
+**In der Liste:** mit − und + die Anzahl ändern, das Teilen-Symbol oben schickt die Liste im
+Deckformat (`4xOP01-001 …`) — passt in jeden Chat mit einem Händler. Der Papierkorb leert sie
+nach Rückfrage.
+
+**Beim Scannen wird automatisch abgehakt:** Hältst du eine gesuchte Karte vor die Kamera, zählt
+die Wunschliste herunter und meldet es kurz. Eine **Alt-Art erfüllt dabei auch den Wunsch nach
+der Normalversion** (zum Spielen ist das Artwork egal) — umgekehrt nicht: Wer die Alt-Art sucht,
+will die Alt-Art.
+
+Die Wunschliste steckt in der **Sicherung** mit drin und kommt beim Wiederherstellen zurück.
+
 ---
 
 ## 4. Zu den Preisen
