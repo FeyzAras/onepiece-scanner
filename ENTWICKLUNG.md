@@ -351,6 +351,22 @@ Für Textersetzungen in Quelldateien `[System.IO.File]::ReadAllText` / `WriteAll
 **PowerShell-Pfade und .NET.** `Set-Location` ändert **nicht** das Arbeitsverzeichnis für
 .NET-Methoden wie `[System.IO.File]::ReadAllBytes`. Dort absolute Pfade verwenden.
 
+**PowerShell und stderr.** Windows PowerShell 5.1 macht aus jeder stderr-Zeile eines externen
+Programms einen Fehlerdatensatz, sobald stderr umgeleitet wird. Mit `$ErrorActionPreference = 'Stop'`
+bricht ein Skript dann mitten im Build ab, obwohl Flutter nur eine harmlose SDK-Warnung ausgab —
+so beim ersten Release-Versuch von v0.9.0. `scripts/release.ps1` führt externe Programme deshalb
+über `Nativ { … }` mit `'Continue'` aus und bewertet nur den Exitcode.
+
+**Commit-Nachrichten mit Anführungszeichen.** `git commit -m @'…'@` zerlegt die Nachricht in
+mehrere Argumente, sobald sie doppelte Anführungszeichen enthält (wieder PowerShell 5.1 beim
+Übergeben an externe Programme). Längere Nachrichten in eine Datei schreiben und `git commit -F`
+benutzen.
+
+**Speicher beim Bauen.** Ein Release-Build im Hintergrund wurde einmal von Claude Code beendet, weil
+der Rechner kaum noch freien Arbeitsspeicher hatte. Der Build braucht rund 2 GB. Vorher den freien
+Speicher prüfen und lange Builds im Vordergrund laufen lassen. Nach `flutter clean` dauert ein Build
+rund 7½ Minuten, ein Folgebuild gut eine Minute.
+
 **onepiecetopdecks.com ist wählerisch.** Node-eigene `fetch`-Anfragen bekommen HTTP 403, `curl`
 funktioniert. Und kurioserweise: eine kurze Plattform-Kennung (`Mozilla/5.0 (Windows NT 10.0;
 Win64; x64)`) kommt durch, eine ausführliche Chrome-Kennung wird blockiert. Außerdem drosselt die
@@ -488,6 +504,11 @@ Berechtigung „Unbekannte Apps", der Neustart nach dem Update.
 
 **Wichtig für den Übergang:** v0.9.0 selbst musste noch von Hand installiert werden — v0.8.0 kennt
 den Updater nicht. Erst ab der darauffolgenden Version greift der Weg aus der App.
+
+**Ende-zu-Ende geprüft am 2026-11-14** (aus Sicht des Handys): `version.json` über
+`raw.githubusercontent.com` abgerufen, die darin genannte APK heruntergeladen — Größe und SHA-256
+stimmen exakt mit `version.json` überein, Signatur-Fingerabdruck wie alle bisherigen Releases.
+Was noch aussteht, ist nur am Gerät prüfbar: der erste echte Update-Vorgang von v0.9.0 auf v0.10.0.
 
 ### Automatik auf GitHub
 
