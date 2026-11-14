@@ -38,6 +38,18 @@ $VersionJson = Join-Path $Wurzel 'docs\data\version.json'
 function Schritt($text) { Write-Host "`n=== $text ===" -ForegroundColor Cyan }
 function Abbruch($text) { Write-Host "ABBRUCH: $text" -ForegroundColor Red; exit 1 }
 
+# Externe Programme (flutter, gh, git, apksigner) schreiben Warnungen auf stderr.
+# Windows PowerShell 5.1 macht daraus Fehlerdatensaetze, sobald stderr umgeleitet wird -
+# und mit ErrorActionPreference 'Stop' bricht das Skript dann mitten im Build ab, obwohl
+# nur eine harmlose Warnung kam. Genau so ist das Release v0.9.0 zuerst gescheitert.
+# Deshalb laufen externe Programme hier mit 'Continue', und ob sie geklappt haben,
+# entscheidet allein ihr Exitcode.
+function Nativ([scriptblock]$befehl) {
+    $vorher = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try { & $befehl } finally { $ErrorActionPreference = $vorher }
+}
+
 # --- 1. Version gegen pubspec pruefen -------------------------------------------------
 Schritt '1/7  Version pruefen'
 
@@ -53,6 +65,17 @@ if ($pubspecZeile -ne $erwartet) {
 }
 Write-Host "  pubspec.yaml: $pubspecZeile"
 Write-Host "  versionCode nach --split-per-abi (arm64): $(2000 + $erwarteteBuildNummer)"
+
+# Das Arbeitsverzeichnis muss sauber sein. Am Ende committet das Skript version.json und
+# holt per 'pull --rebase' die Commits der taeglichen Actions - mit offenen Aenderungen
+# verweigert Git das. Dann waere das Release schon oeffentlich, version.json aber nicht
+# hochgeladen. Genau das ist bei v0.9.0 passiert; deshalb wird es jetzt VORHER geprueft.
+Push-Location $Wurzel
+try { $offen = Nativ { git status --porcelain } } finally { Pop-Location }
+if ($offen) {
+    Abbruch "Es gibt uncommittete Aenderungen:`n$($offen -join "`n")`n         Erst committen, dann veroeffentlichen."
+}
+Write-Host "  Arbeitsverzeichnis sauber."
 
 # --- 2. Schluessel pruefen ------------------------------------------------------------
 Schritt '2/7  Signaturschluessel pruefen'
@@ -72,7 +95,7 @@ Schritt '3/7  App bauen'
 Push-Location $AppDir
 try {
     # --split-per-abi ist Pflicht, siehe Kopfkommentar
-    flutter build apk --release --split-per-abi
+    Nativ { flutter build apk --release --split-per-abi }
     if ($LASTEXITCODE -ne 0) { Abbruch "Build fehlgeschlagen." }
 } finally { Pop-Location }
 
@@ -87,7 +110,7 @@ $apksigner = Get-ChildItem (Join-Path $env:ANDROID_SDK_ROOT 'build-tools') -Recu
     Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
 if (-not $apksigner) { Abbruch "apksigner nicht gefunden. Ist die Werkzeugkette geladen?" }
 
-$zeile = & $apksigner verify --print-certs $Apk | Select-String -Pattern 'SHA-256 digest'
+$zeile = Nativ { & $apksigner verify --print-certs $Apk } | Select-String -Pattern 'SHA-256 digest'
 if (-not $zeile) { Abbruch "Signatur konnte nicht gelesen werden." }
 $ist = (($zeile -split ':')[-1]).Trim().ToUpper()
 $soll = $Fingerabdruck.Replace(':', '')
@@ -114,7 +137,7 @@ $titel = "v$Version"
 $argumente = @("release", "create", "v$Version", $Hochzuladen, "--repo", $Repo, "--title", $titel)
 if ($NotesFile) { $argumente += @("--notes-file", $NotesFile) } else { $argumente += @("--generate-notes") }
 
-& gh @argumente
+Nativ { & gh @argumente }
 if ($LASTEXITCODE -ne 0) { Abbruch "gh release create fehlgeschlagen." }
 
 # --- 6. Pruefen, dass die Datei wirklich erreichbar ist --------------------------------
@@ -155,10 +178,14 @@ Write-Host "  geschrieben: $VersionJson"
 
 Push-Location $Wurzel
 try {
-    git add docs/data/version.json
-    git commit -m "Version $Version veroeffentlicht"
-    git pull --rebase origin master
-    git push origin master
+    Nativ { git add docs/data/version.json }
+    Nativ { git commit -m "Version $Version veroeffentlicht" }
+    if ($LASTEXITCODE -ne 0) { Abbruch "version.json liess sich nicht committen." }
+    # Die taeglichen Actions committen ins selbe Repository - ohne rebase lehnt GitHub ab
+    Nativ { git pull --rebase origin master }
+    if ($LASTEXITCODE -ne 0) { Abbruch "git pull --rebase fehlgeschlagen - version.json ist lokal committet, aber nicht hochgeladen." }
+    Nativ { git push origin master }
+    if ($LASTEXITCODE -ne 0) { Abbruch "git push fehlgeschlagen - version.json ist lokal committet, aber nicht hochgeladen." }
 } finally { Pop-Location }
 
 Write-Host "`nFertig: v$Version ist veroeffentlicht." -ForegroundColor Green
