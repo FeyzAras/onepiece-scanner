@@ -408,7 +408,10 @@ mit 16 GB RAM reichte das, um den Build abstürzen zu lassen. Steht jetzt auf 2 
 **PowerShell und UTF-8.** `Get-Content … | Set-Content` in Windows PowerShell 5.1 liest Dateien
 ohne BOM als Windows-1252 und schreibt sie als UTF-8 zurück — dabei werden alle Umlaute zerstört.
 Für Textersetzungen in Quelldateien `[System.IO.File]::ReadAllText` / `WriteAllText` mit
-`UTF8Encoding($false)` verwenden.
+`UTF8Encoding($false)` verwenden. Zweimal passiert: am 13.11. in `ENTWICKLUNG.md` selbst, und beim
+Release v0.10.0 las `release.ps1` die Notizdatei ohne `-Encoding UTF8` — „zurÃ¼ck" stand so in
+`version.json` und wäre im Update-Dialog erschienen. Vor dem ersten Abruf korrigiert; das Skript
+liest jetzt mit `-Encoding UTF8`.
 
 **PowerShell-Pfade und .NET.** `Set-Location` ändert **nicht** das Arbeitsverzeichnis für
 .NET-Methoden wie `[System.IO.File]::ReadAllBytes`. Dort absolute Pfade verwenden.

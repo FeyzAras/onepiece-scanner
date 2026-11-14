@@ -1,19 +1,19 @@
 {
-    "version":  "0.10.0",
-    "versionCode":  3000,
-    "released":  "2026-11-14",
-    "minSdk":  24,
-    "abi":  "arm64-v8a",
-    "apk":  {
-                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.10.0/onepiece-scanner-arm64.apk",
-                "bytes":  39508285,
-                "sha256":  "3ff387f307afdcf87a10d4ce4f97d48674c44c1de984e63fc5688fa4c5e89dfb"
-            },
-    "notes":  [
-                  "Wert deiner Sammlung als Kurve, zurÃ¼ck bis Oktober â€” mit VerÃ¤nderung seit 7 und 30 Tagen",
-                  "Set-Fortschritt: je Set wie viele Karten du hast, was fehlt und was das Komplettieren kostet",
-                  "Preiskurve jeder einzelnen Karte in den Kartendetails",
-                  "Zweifarbige Leader zeigen jetzt beide Farben"
-              ],
-    "mandatory":  false
+    "version": "0.10.0",
+    "versionCode": 3000,
+    "released": "2026-11-14",
+    "minSdk": 24,
+    "abi": "arm64-v8a",
+    "apk": {
+        "url": "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.10.0/onepiece-scanner-arm64.apk",
+        "bytes": 39508285,
+        "sha256": "3ff387f307afdcf87a10d4ce4f97d48674c44c1de984e63fc5688fa4c5e89dfb"
+    },
+    "notes": [
+        "Wert deiner Sammlung als Kurve, zurück bis Oktober — mit Veränderung seit 7 und 30 Tagen",
+        "Set-Fortschritt: je Set wie viele Karten du hast, was fehlt und was das Komplettieren kostet",
+        "Preiskurve jeder einzelnen Karte in den Kartendetails",
+        "Zweifarbige Leader zeigen jetzt beide Farben"
+    ],
+    "mandatory": false
 }

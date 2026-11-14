@@ -157,7 +157,10 @@ Schritt '7/7  version.json schreiben'
 $sha = (Get-FileHash $Apk -Algorithm SHA256).Hash.ToLower()
 $notizen = @()
 if ($NotesFile -and (Test-Path $NotesFile)) {
-    $notizen = Get-Content $NotesFile | Where-Object { $_ -match '^\s*[-*]\s+' } | ForEach-Object { $_ -replace '^\s*[-*]\s+', '' }
+    # -Encoding UTF8 ist Pflicht: Windows PowerShell 5.1 liest Dateien ohne BOM sonst als
+    # Windows-1252, und aus "zurueck" (mit ue) wird Zeichensalat - der landete bei v0.10.0
+    # so in version.json und damit im Update-Dialog der App.
+    $notizen = Get-Content $NotesFile -Encoding UTF8 | Where-Object { $_ -match '^\s*[-*]\s+' } | ForEach-Object { $_ -replace '^\s*[-*]\s+', '' }
 }
 
 $inhalt = [ordered]@{
