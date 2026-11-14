@@ -13,7 +13,7 @@ in [README.md](README.md).
 # Android-App bauen
 cd android_app
 flutter pub get
-flutter test                                  # 182 Tests, laufen ohne Gerät
+flutter test                                  # 208 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi   # -> build/app/outputs/flutter-apk/
 
 # Daten aktualisieren
@@ -65,12 +65,16 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     update_service.dart Neue Version finden, herunterladen, prüfen
     update_view.dart    Update-Hinweis, Update-Blatt, Warnung bei abgelehntem Update
     app_installer.dart  Brücke zum Android-Installer (MethodChannel)
+    overview_view.dart  Reiter „Übersicht": Wertverlauf, Set-Fortschritt, Set-Detail
+    price_history.dart  Preisverlauf je Set laden (Datei-Zwischenspeicher), Wertverlauf rechnen
+    set_progress.dart   Set-Fortschritt rechnen, Set-Namen lesen — ohne UI
+    line_chart.dart     Liniendiagramm, Preiskurve je Karte, Fortschrittsbalken (CustomPainter)
     decks_view.dart     Deck-Tab mit Sammlungsabgleich
     deck_model.dart     Decklisten einlesen und nachladen
     price_store.dart    Tagesaktuelle Preise nachladen
-    widgets.dart        Gemeinsame Bausteine und Farben
-  assets/             cards.json, decks.json (in die App eingebacken)
-  test/               182 Tests, laufen ohne Gerät
+    widgets.dart        Gemeinsame Bausteine und Farben (inkl. geprüfter Diagrammfarben)
+  assets/             cards.json, decks.json, sets.json (in die App eingebacken)
+  test/               208 Tests, laufen ohne Gerät
   android/app/src/main/kotlin/…/InstallChannel.kt, InstallStatusReceiver.kt
                       PackageInstaller-Sitzung für die Aktualisierung aus der App
 
@@ -93,10 +97,66 @@ Vier Schritte, **die Reihenfolge ist wichtig**:
 3. scripts/build-image-hashes.js    lädt ~2.200 Bilder, berechnet Fingerabdrücke
 4. scripts/fetch-decks.js           Turnierdecks -> docs/data/decks.json
    scripts/build-price-file.js      schlanke Preisdatei -> docs/data/prices.json
+   scripts/build-price-history.js   Verlauf je Set -> docs/data/history/<SET>.json
    scripts/sync-cards.js            verteilt alles an App und Web
 ```
 
-`npm run data:all` macht das in der richtigen Reihenfolge.
+`npm run data:all` macht das in der richtigen Reihenfolge. Die Datentests laufen mit
+`npm run test:data` (Node, ohne Netz, mit einem Wegwerf-Git-Repository).
+
+`build-db.js` schreibt seit v0.10.0 zusätzlich `data/sets.json` (Set-Code → Produktname) und
+übernimmt `colors` als **Liste** sowie den `counter`-Wert. Vorher ging die zweite Farbe der
+154 zweifarbigen Leader verloren.
+
+**Set-Namen** kommen aus dem Feld `card_sets` der Quelle („-ROMANCE DAWN- [OP-01]"). Ein einfacher
+Mehrheitsentscheid wäre falsch: Nachdrucke stehen in fremden Produkten, und die EB04-Karten
+stecken in zwei verschiedenen Boostern (OP-14 und OP-15). Gezählt wird deshalb nur ein Produkt,
+dessen Code **mit dem Set beginnt**. Gibt es keins, bleibt der Name leer und die Produkte stehen
+als „enthalten in". Promos heißen fest „Promokarten".
+
+### Der Preisverlauf
+
+`docs/data/prices.json` wird täglich überschrieben — jeder frühere Stand steht aber in der
+Git-Historie. `build-price-history.js` holt alle Stände per `git log` / `git show` zurück, nimmt den
+gerade geschriebenen Stand dazu und schreibt **je Set eine Datei**:
+`{dates: [...], prices: {"OP01-001": [187, 185, null, ...]}}` — Cent als ganze Zahlen, an `dates`
+ausgerichtet, `null` = kein Preis an diesem Tag. Doppelte Tage (am 06.10. dreimal committet):
+der spätere Stand gewinnt.
+
+Je Set eine Datei, weil die App nie alles braucht: Die Kartendetails laden nur das Set der Karte,
+der Wertverlauf nur die Sets der Sammlung. Stand 14.11.2026: 36 Tage, 60 Dateien, zusammen 485 KB.
+Nach einem Jahr werden es um die 300 KB je Set sein. Falls das stört: ältere Tage auf Wochenwerte
+verdichten.
+
+**Zwei Schutzmechanismen, die nicht entfernt werden dürfen:**
+
+| Schutz | Wogegen |
+| --- | --- |
+| Abbruch bei flacher Git-Kopie (`git rev-parse --is-shallow-repository`) | GitHub Actions klont standardmäßig nur den letzten Commit. Ohne volle Historie schrumpfte der Verlauf auf einen Tag und überschriebe den vorhandenen. Der Workflow setzt deshalb `fetch-depth: 0` |
+| Abbruch, wenn der neue Verlauf **kürzer** wäre als der vorhandene | fast immer ein Lesefehler, kein echter Datenstand. `--erzwingen` überschreibt bewusst |
+
+In der App lädt `HistoryStore` die Dateien bei Bedarf und speichert sie **als Dateien** im
+App-Verzeichnis, nicht in SharedPreferences — die Einstellungsdatei liegt bei Android vollständig
+im Arbeitsspeicher. Gilt 6 Stunden als frisch; ohne Netz wird der alte Stand weiterbenutzt.
+
+`WertVerlauf` rechnet, was die **heutigen** Karten an jedem Tag wert waren. Lücken werden
+vorwärts gefüllt (sonst Einbrüche, die es am Markt nie gab); vor dem ersten bekannten Preis zählt
+eine Karte nicht mit. **Bekannte Grenze:** Gerechnet wird mit der automatisch zugeordneten
+Druckvariante. Für vom Nutzer gewählte Versionen gibt es keinen Verlauf — die Versionslisten
+(`options`) werden nicht archiviert. Die App sagt das dazu.
+
+### Diagramme
+
+Eigener `CustomPainter` (`line_chart.dart`), kein Paket — passend zur Projektlinie. Gestaltet nach
+den dataviz-Regeln: 2-px-Linie, Fläche als 10-%-Hauch, Endpunkt mit Ring in der Flächenfarbe,
+haardünne durchgezogene Hilfslinien, Achsentext in Textfarbe. Antippen zeigt eine einrastende
+senkrechte Linie mit Wert und Datum; dieselben Werte gibt es als Liste.
+
+Die Diagrammfarben sind **gerechnet, nicht geschätzt**: Das App-Gold `#FFB703` liegt bei
+OKLCH-Helligkeit 0,825 und fiel beim Palettenprüfer durch (zulässig auf dunklem Grund: 0,48–0,67).
+Deshalb `kChartLinie = #BD8701` — derselbe Farbton, auf 0,66 abgestuft. Grün für „komplett" ist
+neben dem Gold bei Rot-Grün-Sehschwäche nur knapp unterscheidbar (ΔE 7,5) und erscheint deshalb nie
+allein, sondern immer mit Haken und dem Wort „komplett".
 
 **Fallstrick:** `build-db.js` baut den Katalog von Grund auf neu. Ohne Gegenmaßnahme würde das
 die Preise und Bild-Fingerabdrücke löschen, die Schritt 2 und 3 hinzugefügt haben. Das Skript
@@ -110,6 +170,8 @@ darauf, dass das erhalten bleibt — sonst sind nach einem Lauf still alle Preis
 | Kartenkatalog | npm `one-piece-card-game-json` | englischer + japanischer Katalog |
 | Kartenbilder | `en.onepiece-cardgame.com` | direkt verlinkt, nicht mitgeliefert |
 | Preise | `downloads.s3.cardmarket.com` | Spiel-ID **18** = One Piece |
+| Preisverlauf | Git-Historie von `docs/data/prices.json` | seit 04.10.2026, ein Stand pro Tag |
+| Set-Namen | Feld `card_sets` im npm-Paket | siehe oben |
 | Turnierdecks | `onepiecetopdecks.com` | Seitenliste aus deren Sitemap |
 
 ---
@@ -534,9 +596,12 @@ müssen die Adressen in `price_store.dart` und `deck_model.dart` angepasst werde
 - Ist die Erkennung im Alltag schnell genug, oder nervt die doppelte Bestätigung?
 - Stimmen die Preise gegen den echten Markt?
 
-**In Arbeit (Stand 2026-11-13):**
-- Kartenlisten importieren — eigene Sicherung, Deckliste, Nummernliste, Cardmarket-Export
-- Aktualisierung aus der App heraus statt manuell über die Releases-Seite
+**Geplant (Stand 2026-11-14), Reihenfolge aus der Nutzerwunsch-Recherche:**
+- v0.11.0 Wunschliste — Karten vormerken, Kosten, als Deckliste teilen, beim Scannen abhaken
+- v0.12.0 Eigene Decks bauen — Regelprüfung (zweifarbige Leader!), Abgleich mit der Sammlung
+
+Erledigt: Import (v0.8.0), Aktualisierung aus der App (v0.9.0), Übersicht mit Wert- und
+Preisverlauf und Set-Vervollständigung (v0.10.0).
 
 **Naheliegende Erweiterungen:**
 - Sammlungswert über die Zeit verfolgen (Preisdaten kommen ja täglich)

@@ -15,8 +15,11 @@ import 'collection_view.dart';
 import 'deck_model.dart';
 import 'decks_view.dart';
 import 'import_view.dart';
+import 'overview_view.dart';
+import 'price_history.dart';
 import 'price_store.dart';
 import 'scanner_view.dart';
+import 'set_progress.dart';
 import 'update_service.dart';
 import 'update_view.dart';
 import 'widgets.dart';
@@ -84,6 +87,13 @@ class _HomePageState extends State<HomePage> {
 
   DeckData? _decks;
   bool _decksLoading = true;
+
+  /// Set-Namen aus assets/sets.json, z.B. OP01 -> "Romance Dawn".
+  Map<String, SetInfo> _setInfos = const {};
+
+  /// Ein gemeinsamer Speicher fuer die Preisverlaeufe - Uebersicht und Kartendetails
+  /// teilen sich, was einmal geladen ist.
+  final HistoryStore _historyStore = HistoryStore();
 
   @override
   void initState() {
@@ -175,6 +185,11 @@ class _HomePageState extends State<HomePage> {
     final raw = await rootBundle.loadString('assets/cards.json');
     final cards = (jsonDecode(raw) as List).cast<Map<String, dynamic>>().map(OpCard.fromJson).toList();
     final matcher = CardMatcher(cards);
+    try {
+      _setInfos = SetInfo.parseAll(await rootBundle.loadString('assets/sets.json'));
+    } catch (_) {
+      // Ohne Namen zeigt die Uebersicht die Set-Codes - kein Grund zum Abbruch
+    }
 
     final state = await CollectionStore.load();
     final restored = <CollectionEntry>[];
@@ -679,6 +694,15 @@ class _HomePageState extends State<HomePage> {
                 choiceOf: (card) => _priceChoice[card.id],
                 onChoosePrice: _choosePrice,
                 priceAsOf: _priceAsOf,
+                historyStore: _historyStore,
+              ),
+              OverviewView(
+                entries: _collection,
+                katalog: _matcher?.cards ?? const [],
+                priceOf: _priceOf,
+                setInfos: _setInfos,
+                historyStore: _historyStore,
+                aktiv: _tab == 2,
               ),
               DecksView(
                 data: _decks,
@@ -730,11 +754,17 @@ class _HomePageState extends State<HomePage> {
             label: 'Sammlung',
           ),
           const NavigationDestination(
+            icon: Icon(Icons.insights_outlined),
+            selectedIcon: Icon(Icons.insights, color: Colors.white),
+            label: 'Übersicht',
+          ),
+          const NavigationDestination(
             icon: Icon(Icons.style_outlined),
             selectedIcon: Icon(Icons.style, color: Colors.white),
             label: 'Decks',
           ),
         ],
+        // Reihenfolge der Ziele = Reihenfolge im IndexedStack oben
       ),
     );
   }

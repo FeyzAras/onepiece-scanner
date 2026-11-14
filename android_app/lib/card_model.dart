@@ -99,9 +99,16 @@ class OpCard {
   final String name;
   final String rarity;
   final String cardType;
-  final String color;
+
+  /// Alle Farben der Karte. Zweifarbige Leader haben zwei (z.B. Rot/Gruen) - beim
+  /// Deckbau bestimmen sie, welche Karten erlaubt sind.
+  final List<String> colors;
+
   final int? power;
   final int? costLife;
+
+  /// Counter-Wert (bei Figuren 1000 oder 2000), sonst null.
+  final int? counter;
   final String effect;
   final String? img;
   final CardPrice? price;
@@ -121,6 +128,9 @@ class OpCard {
 
   bool get hasPriceChoice => priceOptions.length > 1;
 
+  /// Farbe(n) fuer die Anzeige: "Red" oder "Red/Green".
+  String get color => colors.join('/');
+
   /// Welches Sammelkartenspiel. Aktuell nur One Piece, aber die Sammlung
   /// gruppiert bereits danach, damit weitere Spiele spaeter dazupassen.
   String get game => 'One Piece Card Game';
@@ -138,9 +148,10 @@ class OpCard {
     required this.name,
     required this.rarity,
     required this.cardType,
-    required this.color,
+    this.colors = const [],
     this.power,
     this.costLife,
+    this.counter,
     required this.effect,
     this.img,
     this.price,
@@ -156,9 +167,10 @@ class OpCard {
         name: (j['name'] ?? '') as String,
         rarity: (j['rarity'] ?? '') as String,
         cardType: (j['cardType'] ?? '') as String,
-        color: (j['color'] ?? '') as String,
+        colors: _farben(j),
         power: (j['power'] as num?)?.toInt(),
         costLife: (j['costLife'] as num?)?.toInt(),
+        counter: (j['counter'] as num?)?.toInt(),
         effect: (j['effect'] ?? '') as String,
         img: j['img'] as String?,
         price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),
@@ -167,4 +179,15 @@ class OpCard {
         priceOptions:
             (j['priceOptions'] as List?)?.map((e) => (e as num).toDouble()).toList() ?? const [],
       );
+
+  /// Liest `colors` (Liste) und faellt auf das alte Einzelfeld `color` zurueck. Aeltere
+  /// Katalogdateien kannten nur die erste Farbe.
+  static List<String> _farben(Map<String, dynamic> j) {
+    final liste = j['colors'];
+    if (liste is List && liste.isNotEmpty) {
+      return liste.map((e) => '$e').where((e) => e.isNotEmpty).toList();
+    }
+    final einzeln = j['color'];
+    return einzeln is String && einzeln.isNotEmpty ? [einzeln] : const [];
+  }
 }

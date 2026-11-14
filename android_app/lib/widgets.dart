@@ -12,6 +12,21 @@ const kGold = Color(0xFFFFB703);
 const kDim = Color(0xFF9AA1AC);
 const kOk = Color(0xFF3DDC84);
 
+// Diagrammfarben - mit dem Palettenpruefer der dataviz-Regeln nachgerechnet, nicht geschaetzt.
+// kGold (#FFB703) liegt bei OKLCH-Helligkeit 0,825; fuer Datenmarkierungen auf dunklem Grund
+// gilt 0,48 bis 0,67, sonst gleisst die Linie neben allem anderen. Deshalb derselbe Farbton,
+// abgestuft auf 0,66. Kontrast zu kSurface und kRow jeweils ueber 3:1.
+
+/// Linien, Flaechen und Fortschrittsbalken in Diagrammen.
+const kChartLinie = Color(0xFFBD8701);
+
+/// "Komplett" bei Fortschrittsbalken. Neben kChartLinie bei Rot-Gruen-Sehschwaeche nur
+/// knapp unterscheidbar (Delta E 7,5) - deshalb nie allein, immer mit Haken und Wort.
+const kChartGut = Color(0xFF01AE61);
+
+/// Hilfslinien: eine Stufe neben der Flaeche, haarduenn, durchgezogen.
+const kGitter = Color(0xFF262B33);
+
 /// Kartenbild im richtigen Seitenverhaeltnis, mit Zwischenspeicher auf dem Geraet.
 class CardImage extends StatelessWidget {
   final OpCard card;

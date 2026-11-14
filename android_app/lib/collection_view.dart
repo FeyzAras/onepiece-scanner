@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'card_model.dart';
 import 'collection_export.dart';
 import 'collection_store.dart';
+import 'line_chart.dart';
+import 'price_history.dart';
 import 'widgets.dart';
 
 /// Ein Eintrag der Sammlung: eine Karte, wie oft sie gescannt wurde und in welchem Ordner.
@@ -79,11 +81,15 @@ class CollectionView extends StatefulWidget {
   /// true, wenn die gespeicherte Sammlung beim Start nicht gelesen werden konnte.
   final bool loadFailed;
 
+  /// Preisverlaeufe fuer die Kurve in den Kartendetails. Ohne ihn keine Kurve.
+  final HistoryStore? historyStore;
+
   const CollectionView({
     super.key,
     required this.entries,
     required this.folders,
     this.loadFailed = false,
+    this.historyStore,
     required this.onRemoveOne,
     required this.onSwitchArtwork,
     required this.variantsOf,
@@ -659,6 +665,12 @@ class _CollectionViewState extends State<CollectionView> {
                 ],
               ),
               if (price != null) _priceSection(ctx, stack),
+              if (price != null && widget.historyStore != null)
+                KartenPreisVerlauf(
+                  card: card,
+                  store: widget.historyStore!,
+                  eigeneWahl: widget.choiceOf(card) != null,
+                ),
               if (card.effect.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Text(card.effect, style: const TextStyle(color: Color(0xFFD7DBE0), fontSize: 12, height: 1.45)),

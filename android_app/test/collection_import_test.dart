@@ -28,7 +28,7 @@ void main() {
         name: name,
         rarity: 'R',
         cardType: 'Character',
-        color: 'Red',
+        colors: const ['Red'],
         effect: '',
         price: idProduct == null
             ? null

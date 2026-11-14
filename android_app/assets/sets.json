@@ -1,0 +1,246 @@
+[
+  {
+    "code": "EB01",
+    "name": "Memorial Collection"
+  },
+  {
+    "code": "EB02",
+    "name": "Anime 25th Collection"
+  },
+  {
+    "code": "EB03",
+    "name": "One Piece Heroines Edition"
+  },
+  {
+    "code": "EB04",
+    "name": null,
+    "enthalten": [
+      "Adventure on Kami's Island",
+      "The Azure Sea’s Seven"
+    ]
+  },
+  {
+    "code": "OP01",
+    "name": "Romance Dawn"
+  },
+  {
+    "code": "OP02",
+    "name": "Paramount War"
+  },
+  {
+    "code": "OP03",
+    "name": "Pillars of Strength"
+  },
+  {
+    "code": "OP04",
+    "name": "Kingdoms of Intrigue"
+  },
+  {
+    "code": "OP05",
+    "name": "Awakening of the New Era"
+  },
+  {
+    "code": "OP06",
+    "name": "Wings of the Captain"
+  },
+  {
+    "code": "OP07",
+    "name": "500 Years in the Future"
+  },
+  {
+    "code": "OP08",
+    "name": "Two Legends"
+  },
+  {
+    "code": "OP09",
+    "name": "Emperors in the New World"
+  },
+  {
+    "code": "OP10",
+    "name": "Royal Blood"
+  },
+  {
+    "code": "OP11",
+    "name": "A Fist of Divine Speed"
+  },
+  {
+    "code": "OP12",
+    "name": "Legacy of the Master"
+  },
+  {
+    "code": "OP13",
+    "name": "Carrying on His Will"
+  },
+  {
+    "code": "OP14",
+    "name": "The Azure Sea’s Seven"
+  },
+  {
+    "code": "OP15",
+    "name": "Adventure on Kami's Island"
+  },
+  {
+    "code": "OP16",
+    "name": "The Time of Battle"
+  },
+  {
+    "code": "OP17",
+    "name": "Booster Pack -The World’s Strongest Warriors"
+  },
+  {
+    "code": "P",
+    "name": "Promokarten"
+  },
+  {
+    "code": "PRB01",
+    "name": "One Piece Card the Best"
+  },
+  {
+    "code": "PRB02",
+    "name": "One Piece Card the Best Vol.2"
+  },
+  {
+    "code": "ST01",
+    "name": "Straw Hat Crew"
+  },
+  {
+    "code": "ST02",
+    "name": "Worst Generation"
+  },
+  {
+    "code": "ST03",
+    "name": "The Seven Warlords of the Sea"
+  },
+  {
+    "code": "ST04",
+    "name": "Animal Kingdom Pirates"
+  },
+  {
+    "code": "ST05",
+    "name": "ONE PIECE FILM edition"
+  },
+  {
+    "code": "ST06",
+    "name": "Absolute Justice"
+  },
+  {
+    "code": "ST07",
+    "name": "Big Mom Pirates"
+  },
+  {
+    "code": "ST08",
+    "name": "Monkey D. Luffy"
+  },
+  {
+    "code": "ST09",
+    "name": "Yamato"
+  },
+  {
+    "code": "ST10",
+    "name": "The Three Captains"
+  },
+  {
+    "code": "ST11",
+    "name": "Uta"
+  },
+  {
+    "code": "ST12",
+    "name": "Zoro & Sanji"
+  },
+  {
+    "code": "ST13",
+    "name": "The Three Brothers"
+  },
+  {
+    "code": "ST14",
+    "name": "3D2y"
+  },
+  {
+    "code": "ST15",
+    "name": "Red Edward.Newgate"
+  },
+  {
+    "code": "ST16",
+    "name": "Green Uta"
+  },
+  {
+    "code": "ST17",
+    "name": "Blue Donquixote Doflamingo"
+  },
+  {
+    "code": "ST18",
+    "name": "Purple Monkey.D.Luffy"
+  },
+  {
+    "code": "ST19",
+    "name": "Black Smoker"
+  },
+  {
+    "code": "ST20",
+    "name": "Yellow Charlotte Katakuri"
+  },
+  {
+    "code": "ST21",
+    "name": "Gear5"
+  },
+  {
+    "code": "ST22",
+    "name": "Ace & Newgate"
+  },
+  {
+    "code": "ST23",
+    "name": "RED Shanks"
+  },
+  {
+    "code": "ST24",
+    "name": "GREEN Jewelry Bonney"
+  },
+  {
+    "code": "ST25",
+    "name": "BLUE Buggy"
+  },
+  {
+    "code": "ST26",
+    "name": "PURPLE/BLACK Monkey.D.Luffy"
+  },
+  {
+    "code": "ST27",
+    "name": "BLACK Marshall.D.Teach"
+  },
+  {
+    "code": "ST28",
+    "name": "Green/yellow Yamato"
+  },
+  {
+    "code": "ST29",
+    "name": "Egghead"
+  },
+  {
+    "code": "ST30",
+    "name": "Luffy & Ace"
+  },
+  {
+    "code": "ST31",
+    "name": "STARTER DECK -RED Monkey.D.Luffy"
+  },
+  {
+    "code": "ST32",
+    "name": "STARTER DECK -GREEN Roronoa Zoro"
+  },
+  {
+    "code": "ST33",
+    "name": "Starter Deck -Blue Kuzan"
+  },
+  {
+    "code": "ST34",
+    "name": "STARTER DECK -PURPLE Charlotte Katakuri"
+  },
+  {
+    "code": "ST35",
+    "name": "Starter Deck -Red/black Sabo"
+  },
+  {
+    "code": "ST36",
+    "name": "STARTER DECK -YELLOW Eustass\"Captain\"Kid"
+  }
+]

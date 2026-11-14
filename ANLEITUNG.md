@@ -214,6 +214,31 @@ derselben Karte in der Hand hältst. Beide tragen dieselbe Nummer, und am Bild s
 > **Die Sammlung bleibt erhalten.** Sie wird auf dem Gerät gespeichert und ist beim nächsten
 > Öffnen wieder da.
 
+### Übersicht (ab Version 0.10.0)
+
+Der vierte Reiter unten. Er braucht beim ersten Öffnen kurz Internet, danach geht er auch offline
+mit dem zuletzt geladenen Stand.
+
+**Wert deiner Sammlung** — oben die große Zahl ist der heutige Wert, darunter die Veränderung
+seit 7 und seit 30 Tagen (▲ grün = gestiegen, ▼ rot = gefallen). Die Kurve zeigt, was deine
+**heutigen** Karten an jedem Tag wert waren — sie beginnt am 4. Oktober 2026, seitdem werden die
+Preise gesammelt. **Antippen oder darüberwischen** zeigt Datum und Wert des jeweiligen Tages.
+„Werte als Liste" darunter zeigt dieselben Zahlen zum Nachlesen. Nach unten ziehen lädt neu.
+
+**Sets** — je Set, wie viele Grundkarten du hast, etwa *OP01 · Romance Dawn — 87 von 175*.
+Alt-Arts werden daneben eigens gezählt, denn sie machen ein Set nicht unvollständig. Rechts steht,
+was die fehlenden Karten zum heutigen Preis kosten würden. Antippen zeigt die fehlenden Karten,
+günstigste zuerst. Ein komplettes Set bekommt einen grünen Haken und das Wort *komplett*.
+
+Sets, aus denen du noch keine Karte hast, stehen eingeklappt unter **Weitere Sets**.
+
+**Preiskurve je Karte** — in den Kartendetails (Karte in der Sammlung antippen) steht unter dem
+Preis jetzt sein Verlauf, mit dem tiefsten und höchsten Stand.
+
+> **Gut zu wissen:** Kurven und Set-Kosten rechnen mit der Druckvariante, die die App automatisch
+> zugeordnet hat. Hast du bei einer Karte eine andere Version gewählt, steht ein Hinweis dabei.
+> Nur auf Japanisch erschienene Karten zählen nicht zur Set-Gesamtzahl.
+
 ---
 
 ## 4. Zu den Preisen

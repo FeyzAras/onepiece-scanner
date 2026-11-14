@@ -58,6 +58,11 @@ gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Ble
 gespeichert und lässt sich **sichern**: eine CSV für Excel und eine JSON-Datei, die sich
 verlustfrei wieder einlesen lässt.
 
+**Übersicht** — der Wert deiner Sammlung als Kurve, zurück bis Oktober 2026, mit Veränderung
+seit 7 und 30 Tagen. Je Set der Fortschritt („OP01 · Romance Dawn — 87 von 175"), Alt-Arts
+getrennt gezählt, mit den fehlenden Karten und was sie kosten. In den Kartendetails die
+Preiskurve jeder einzelnen Karte.
+
 **Listen einlesen** — Sicherungsdatei, eigener CSV-Export, Deckliste (`4xOP01-001 …`), eine
 Nummer je Zeile oder ein Cardmarket-Bestandsexport. Das Format wird selbst erkannt, schief
 geschriebene Nummern (`OP1-1`, `OPO1-001`) werden korrigiert, und vor dem Übernehmen zeigt eine
@@ -96,7 +101,8 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 182 Tests, laufen ohne Gerät
+flutter test                        # 208 Tests, laufen ohne Gerät
+npm run test:data                   # 10 Tests der Datenaufbereitung (aus dem Hauptordner)
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```

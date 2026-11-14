@@ -161,8 +161,13 @@ Supernovas/Straw Hat Crew oo01.001 um''';
       final normal = matcher.byId('OP01-001')!;
       final alt = matcher.byId('OP01-001-ALT')!;
       expect(normal.price!.amount, lessThan(alt.price!.amount));
-      expect(normal.price!.amount, closeTo(1.87, 0.01));
-      expect(alt.price!.amount, greaterThan(100));
+      // Bewusst kein fester Betrag: Die Preise im Katalog werden mit jeder Version
+      // aufgefrischt, ein Tagespreis (frueher 1,87 EUR) liess den Test sonst scheitern.
+      // Gepruefte Regel: Die Alt-Art ist ein Sammlerdruck, die Normalversion nicht -
+      // genau das ging frueher verloren, als beide denselben Preis bekamen.
+      expect(normal.price!.amount, lessThan(20), reason: 'Normalversion ist ein gewoehnlicher Druck');
+      expect(alt.price!.amount, greaterThan(normal.price!.amount * 10),
+          reason: 'Alt-Art liegt um ein Vielfaches darueber');
     });
 
     test('beide Varianten kennen die Spanne aller Cardmarket-Versionen', () {
