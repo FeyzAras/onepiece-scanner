@@ -1,248 +1,248 @@
 {
-  "generated": "2026-11-21",
+  "generated": "2026-11-22",
   "first": "2026-10-04",
-  "last": "2026-11-20",
-  "days": 41,
+  "last": "2026-11-22",
+  "days": 42,
   "sets": {
     "EB01": {
       "cards": 89,
-      "bytes": 12103
+      "bytes": 12361
     },
     "EB02": {
       "cards": 82,
-      "bytes": 12277
+      "bytes": 12542
     },
     "EB03": {
       "cards": 82,
-      "bytes": 11910
+      "bytes": 12168
     },
     "EB04": {
       "cards": 84,
-      "bytes": 11645
+      "bytes": 11902
     },
     "OP01": {
       "cards": 173,
-      "bytes": 25359
+      "bytes": 25912
     },
     "OP02": {
       "cards": 180,
-      "bytes": 24127
+      "bytes": 24653
     },
     "OP03": {
       "cards": 176,
-      "bytes": 23083
+      "bytes": 23584
     },
     "OP04": {
       "cards": 155,
-      "bytes": 19489
+      "bytes": 19909
     },
     "OP05": {
       "cards": 174,
-      "bytes": 21289
+      "bytes": 21740
     },
     "OP06": {
       "cards": 177,
-      "bytes": 21455
+      "bytes": 21912
     },
     "OP07": {
       "cards": 168,
-      "bytes": 20488
+      "bytes": 20932
     },
     "OP08": {
       "cards": 150,
-      "bytes": 18198
+      "bytes": 18586
     },
     "OP09": {
       "cards": 185,
-      "bytes": 22050
+      "bytes": 22522
     },
     "OP10": {
       "cards": 162,
-      "bytes": 20644
+      "bytes": 21097
     },
     "OP11": {
       "cards": 158,
-      "bytes": 19416
+      "bytes": 19830
     },
     "OP12": {
       "cards": 168,
-      "bytes": 20513
+      "bytes": 20951
     },
     "OP13": {
       "cards": 171,
-      "bytes": 21518
+      "bytes": 21983
     },
     "OP14": {
       "cards": 160,
-      "bytes": 20458
+      "bytes": 20900
     },
     "OP15": {
       "cards": 149,
-      "bytes": 19389
+      "bytes": 19807
     },
     "OP16": {
       "cards": 150,
-      "bytes": 20835
+      "bytes": 21297
     },
     "OP17": {
       "cards": 152,
-      "bytes": 21559
+      "bytes": 22008
     },
     "P": {
       "cards": 201,
-      "bytes": 35451
+      "bytes": 36249
     },
     "PRB01": {
       "cards": 2,
-      "bytes": 895
+      "bytes": 916
     },
     "PRB02": {
       "cards": 36,
-      "bytes": 6739
+      "bytes": 6888
     },
     "ST01": {
       "cards": 34,
-      "bytes": 6135
+      "bytes": 6269
     },
     "ST02": {
       "cards": 34,
-      "bytes": 5516
+      "bytes": 5635
     },
     "ST03": {
       "cards": 29,
-      "bytes": 4945
+      "bytes": 5052
     },
     "ST04": {
       "cards": 26,
-      "bytes": 4196
+      "bytes": 4286
     },
     "ST05": {
       "cards": 34,
-      "bytes": 4734
+      "bytes": 4837
     },
     "ST06": {
       "cards": 21,
-      "bytes": 3172
+      "bytes": 3244
     },
     "ST07": {
       "cards": 22,
-      "bytes": 3254
+      "bytes": 3329
     },
     "ST08": {
       "cards": 16,
-      "bytes": 2480
+      "bytes": 2535
     },
     "ST09": {
       "cards": 17,
-      "bytes": 2481
+      "bytes": 2535
     },
     "ST10": {
       "cards": 23,
-      "bytes": 4490
+      "bytes": 4590
     },
     "ST11": {
       "cards": 6,
-      "bytes": 1383
+      "bytes": 1414
     },
     "ST12": {
       "cards": 22,
-      "bytes": 3198
+      "bytes": 3268
     },
     "ST13": {
       "cards": 36,
-      "bytes": 6480
+      "bytes": 6626
     },
     "ST14": {
       "cards": 23,
-      "bytes": 3666
+      "bytes": 3747
     },
     "ST15": {
       "cards": 7,
-      "bytes": 1768
+      "bytes": 1809
     },
     "ST16": {
       "cards": 9,
-      "bytes": 2040
+      "bytes": 2086
     },
     "ST17": {
       "cards": 9,
-      "bytes": 2225
+      "bytes": 2276
     },
     "ST18": {
       "cards": 10,
-      "bytes": 2509
+      "bytes": 2566
     },
     "ST19": {
       "cards": 6,
-      "bytes": 1301
+      "bytes": 1331
     },
     "ST20": {
       "cards": 6,
-      "bytes": 1262
+      "bytes": 1291
     },
     "ST21": {
       "cards": 33,
-      "bytes": 6344
+      "bytes": 6485
     },
     "ST22": {
       "cards": 31,
-      "bytes": 5576
+      "bytes": 5700
     },
     "ST23": {
       "cards": 6,
-      "bytes": 1336
+      "bytes": 1366
     },
     "ST24": {
       "cards": 6,
-      "bytes": 1320
+      "bytes": 1350
     },
     "ST25": {
       "cards": 5,
-      "bytes": 1159
+      "bytes": 1186
     },
     "ST26": {
       "cards": 6,
-      "bytes": 1498
+      "bytes": 1532
     },
     "ST27": {
       "cards": 6,
-      "bytes": 1416
+      "bytes": 1448
     },
     "ST28": {
       "cards": 5,
-      "bytes": 1257
+      "bytes": 1285
     },
     "ST29": {
       "cards": 31,
-      "bytes": 5238
+      "bytes": 5353
     },
     "ST30": {
       "cards": 34,
-      "bytes": 6471
+      "bytes": 6615
     },
     "ST31": {
       "cards": 6,
-      "bytes": 1539
+      "bytes": 1575
     },
     "ST32": {
       "cards": 6,
-      "bytes": 1532
+      "bytes": 1566
     },
     "ST33": {
       "cards": 5,
-      "bytes": 1293
+      "bytes": 1322
     },
     "ST34": {
       "cards": 5,
-      "bytes": 1264
+      "bytes": 1292
     },
     "ST35": {
       "cards": 5,
-      "bytes": 1219
+      "bytes": 1247
     },
     "ST36": {
       "cards": 5,
-      "bytes": 1287
+      "bytes": 1316
     }
   }
 }
