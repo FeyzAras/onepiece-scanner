@@ -13,7 +13,7 @@ in [README.md](README.md).
 # Android-App bauen
 cd android_app
 flutter pub get
-flutter test                                  # 228 Tests, laufen ohne Gerät
+flutter test                                  # 291 Tests, laufen ohne Gerät
 flutter build apk --release --split-per-abi   # -> build/app/outputs/flutter-apk/
 
 # Daten aktualisieren
@@ -55,9 +55,10 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     scanner_view.dart   Kamera, Texterkennung, Mehrfachbestätigung
     card_matcher.dart   Erkennung: Kartennummer -> Karte, Artwork-Auswahl
     image_hash.dart     Bild-Fingerabdruck (dHash) aus dem Kamerabild
-    card_model.dart     Kartendaten und Preis-Datenmodell
+    card_model.dart     Kartendaten und Preis-Datenmodell, Motiv-Platz (-ALT, -ALTk)
+    card_versions.dart  Cardmarket-Versionen je Nummer: Modell, Datei, Speicher, Gruppierung
     collection_view.dart Sammlung: Raster, Suche, Sortierung, Kartendetails
-    collection_store.dart Dauerhafte Speicherung (Ordner, Scans, Preiswahl, Sicherung)
+    collection_store.dart Dauerhafte Speicherung (Ordner, Scans, Versionswahl, Sicherung)
     collection_export.dart CSV-Export und JSON-Sicherung
     collection_import.dart Listen einlesen — Formaterkennung und Zuordnung, ohne UI
     import_view.dart    Import-Blatt: Quelle, Vorschau, Zielordner, Einfügemodus
@@ -77,8 +78,8 @@ android_app/          Die Android-App (Flutter) — das eigentliche Produkt
     my_decks_view.dart  Deckliste, Editor, Kartensuche, Leaderwahl, Kostenkurve
     price_store.dart    Tagesaktuelle Preise nachladen
     widgets.dart        Gemeinsame Bausteine und Farben (inkl. geprüfter Diagrammfarben)
-  assets/             cards.json, decks.json, sets.json (in die App eingebacken)
-  test/               267 Tests, laufen ohne Gerät
+  assets/             cards.json, decks.json, sets.json, versions.json (in die App eingebacken)
+  test/               291 Tests, laufen ohne Gerät (davon 6 Oberflächentests der Kartendetails)
   android/app/src/main/kotlin/…/InstallChannel.kt, InstallStatusReceiver.kt
                       PackageInstaller-Sitzung für die Aktualisierung aus der App
 
@@ -95,9 +96,11 @@ data/                 Zwischenstände (nicht versioniert)
 Vier Schritte, **die Reihenfolge ist wichtig**:
 
 ```
-1. scripts/build-db.js              npm-Paket -> data/cards.normalized.json
-2. scripts/fetch-cardmarket.js      Cardmarket-Exporte -> data/cm_*.json
-   scripts/import-cardmarket-prices.js  ordnet Preise den Karten zu
+1. scripts/build-db.js              npm-Paket -> data/cards.normalized.json (alle Motive)
+2. scripts/fetch-cardmarket.js      Cardmarket-Exporte -> data/cm_*.json (Einzelkarten,
+                                    Preise, versiegelte Produkte fuer die Ausgabe-Namen)
+   scripts/import-cardmarket-prices.js  ordnet Preise den Motiven zu -> data/versions.json
+                                    (Logik in cardmarket-zuordnung.js)
 3. scripts/build-image-hashes.js    lädt ~2.200 Bilder, berechnet Fingerabdrücke
 4. scripts/fetch-decks.js           Turnierdecks -> docs/data/decks.json
    scripts/build-price-file.js      schlanke Preisdatei -> docs/data/prices.json
@@ -113,6 +116,33 @@ Vier Schritte, **die Reihenfolge ist wichtig**:
 154 zweifarbigen Leader verloren. Seit v0.12.0 kommen die **`types`** dazu („East Blue",
 „Straw Hat Crew") — die Deckprüfung braucht sie für Leader wie P-117 Nami, die nur einen Typ
 erlauben.
+
+**Alle Motive und ihre IDs (seit v0.13.0).** Bandais Katalog kennt 4.845 Drucke zu 2.785 Nummern;
+bis v0.12 kam je Nummer nur die erste Alt-Art in den Katalog, 968 Motive fehlten — vor allem die
+Nachdrucke aus „The Best" (PRB-01/02). Jetzt kommen alle mit, mit `produkt` und `produktSets`
+(aus welchem Produkt das Motiv stammt). Die IDs sind heikel, weil gespeicherte Sammlungen auf sie
+verweisen:
+
+| Regel | Warum |
+| --- | --- |
+| Ein schon ausgeliefertes Bild behält seine ID — für immer. Register: der versionierte `android_app/assets/cards.json` (liegt auch in der GitHub Action vor) | Bei 234 Nummern ist die bisherige `-ALT` gar nicht das Motiv `_p1`. Ein Schema nach Bildnummer hätte gespeicherte Karten still umgedeutet |
+| Neue Bilder: erste Normalversion → Nummer, erste Alt-Art → `-ALT`, alle weiteren → `-ALT2`, `-ALT3` … | wie bisher, nur ohne Verlust |
+| `build-db.js` bricht ab, wenn eine ausgelieferte ID ihr Bild wechseln würde | lieber kein Katalog als ein still falscher |
+| Doppelte japanische IDs (z. B. `OP01-114-ALT` dreimal): der **letzte** Eintrag behält die ID | genau den fand die App bisher; die anderen waren unerreichbar |
+
+Der **Scanner** unterscheidet weiterhin nur Normalversion und `-ALT` per Bild-Fingerabdruck
+(`build-image-hashes.js` rechnet nur für diese). Viele neue Motive sehen einander sehr ähnlich;
+mehr Kandidaten hätten die Treffsicherheit ungeprüft verändert. Erst mit einer Messung an echten
+Kamerabildern erweitern — bis dahin stellt der Nutzer weitere Motive in den Details um.
+
+Im **Set-Fortschritt** zählen als Alt-Arts nur Motive aus dem eigenen Produkt des Sets
+(`SetProgress.gehoertZumSet`): Die Parallele aus dem OP01-Booster gehört zu OP01, der PRB-01-
+Nachdruck derselben Nummer nicht — sonst wären OP01 bis OP10 durch 317 PRB-Motive nie komplett.
+
+**Produktnamen:** Seit OP-17 bzw. ST-31 schreibt Bandai „BOOSTER PACK -THE WORLD'S STRONGEST
+WARRIORS-" und „STARTER DECK -RED Monkey.D.Luffy-". Die Übersicht zeigte deshalb „Booster Pack
+-The World's …" und „STARTER DECK -RED …". `parseProduct` entfernt die Produktart und schreibt nur
+noch ganz groß geschriebene Wörter um („PURPLE/BLACK" → „Purple/Black", „Monkey.D.Luffy" bleibt).
 
 **Set-Namen** kommen aus dem Feld `card_sets` der Quelle („-ROMANCE DAWN- [OP-01]"). Ein einfacher
 Mehrheitsentscheid wäre falsch: Nachdrucke stehen in fremden Produkten, und die EB04-Karten
@@ -286,12 +316,14 @@ Ein einzelner Fehlgriff landete sonst sofort in der Sammlung. `kConfirmationsNee
 
 ### Artwork-Unterscheidung
 
-Zu **1.083 Kartennummern gibt es zwei Karten**: normales Artwork und Alt-Art, bei identischer
+Zu **1.083 Kartennummern gibt es eine Normalversion und mindestens eine Alt-Art**, bei identischer
 Nummer und identischem Namen. Am Text sind sie nicht unterscheidbar.
 
-Lösung: `scripts/build-image-hashes.js` lädt alle 2.166 betroffenen Bilder und berechnet je einen
-dHash (9×8 Graustufen, waagerechte Nachbarvergleiche, 64 Bit). Die App berechnet denselben Hash
-aus dem Kamerabild (`image_hash.dart`) und nimmt die ähnlichere Version.
+Lösung: `scripts/build-image-hashes.js` lädt die 2.166 Bilder von Normalversion und erster Alt-Art
+(`-ALT`) und berechnet je einen dHash (9×8 Graustufen, waagerechte Nachbarvergleiche, 64 Bit). Die
+App berechnet denselben Hash aus dem Kamerabild (`image_hash.dart`) und nimmt die ähnlichere
+Version. Die weiteren Motive (`-ALT2` …, seit v0.13 im Katalog) bekommen bewusst keinen
+Fingerabdruck — siehe Abschnitt 3.
 
 **Beide Berechnungen müssen identisch bleiben** — die in JavaScript (`build-image-hashes.js`) und
 die in Dart (`image_hash.dart`). Ändert man eine, passen die Werte nicht mehr zusammen und die
@@ -332,48 +364,71 @@ anfassen bringt Risiko ohne Gewinn. Ein Test sichert ab, dass beide Parser auf d
 
 ### Das Problem
 
-Cardmarket führt **pro Kartennummer im Schnitt 4,2 Produkte**, teils über 20: Originaldruck,
-Alt-Art, Nachdrucke in späteren Sets, Promos, Turnierpreise. Die Preise liegen weit auseinander —
-bei OP01-001 zwischen 1,87 € und 610 €. Bei rund 80 % der Nummern beträgt die Spanne mindestens
-Faktor 5.
+Cardmarket führt **pro Kartennummer im Schnitt 4,5 Produkte**, teils über 20: Booster-Druck,
+Parallelen, Nachdrucke in späteren Produkten, Promos, Turnierpreise — und je Booster eine
+asiatische („Asia Region Legal") und eine japanische Auflage („Non-English"). Die Preise liegen
+weit auseinander: OP17-040 gibt es viermal zwischen 0,06 € und 74 €, OP01-006 siebzehnmal.
 
-Eine frühere Fassung nahm einfach das älteste Produkt. Dadurch bekamen normales Artwork und
-Alt-Art denselben, viel zu niedrigen Preis.
+Der Einzelkarten-Export nennt je Produkt nur Name, Nummer und **Ausgabe-ID** (`idExpansion`).
+Innerhalb einer Ausgabe heißen alle Versionen einer Nummer gleich. Bandais Katalog kennt umgekehrt
+jedes Motiv mit Bild und Produkt, aber keine Cardmarket-Nummern. Eine feste Zuordnung wie bei
+Scryfall (dort trägt jeder Druck seine `cardmarket_id`) gibt es für One Piece nicht — sie muss
+abgeleitet werden.
 
-### Die Lösung
+### Die Lösung (seit v0.13, `scripts/cardmarket-zuordnung.js`)
 
-Cardmarket liefert **keine Editionsnamen**, nur Nummern (`idExpansion`). Welche Edition das
-Originalset ist, wird aus den enthaltenen Kartennummern abgeleitet: Enthält eine Edition zu über
-90 % Karten mit der Vorsilbe `OP01`, ist es das OP01-Set. Pro Set gilt die **zuerst angelegte**
-solche Edition als Originaldruck.
+1. **Ausgaben bekommen Namen** über die versiegelten Produkte derselben Ausgabe
+   (`products_nonsingles_18.json`): „The World's Strongest Warriors Booster (Asia Region Legal)"
+   → Ausgabe 6723 = „The World's Strongest Warriors (Asia Region Legal)". 145 von 153 Ausgaben
+   bekommen so ihren Namen; der Rest sind gemischte Promo-Sammlungen („Promos · Nr. 5262").
+   Regeln: gemeinsamer Wortanfang aller Produkte, sonst der häufigste Name; bei gemischten
+   Ausgaben nur ein Anfang, den mindestens 60 % teilen, oder ein einzelnes kleines Produkt.
+2. **Originalausgabe je Set** = die englische Ausgabe, in der das Set die meisten Karten stellt
+   (mindestens die Hälfte). Ausgaben mit Sprach-/Regionszusatz kommen nie in Frage.
+3. **Jedes Motiv sucht seine Ausgabe** über Bandais Produktangabe: eigenes Set → Originalausgabe;
+   sonst per Set-Code (`[ST-15]`) oder Namensvergleich („One Piece Card the Best" → „The Best").
+   Genommen wird die erste passende Ausgabe, die die Nummer überhaupt führt.
+4. **Innerhalb der Ausgabe nach Preis verteilt:** Normalversion und Nachdrucke (`_r`) bekommen
+   die günstigsten Versionen, Parallelen (`_p`) die teuersten.
+5. **Ausweichregeln, alle „unsicher":** Das Grundmotiv bekommt immer einen Preis (günstigste
+   freie Version ohne Zusatz); ein Nachdruck ohne eigene Version den der Normalversion; eine
+   Alt-Art eine freie Version der eigenen Originalausgabe (Promo-Alt-Arts liegen bei Cardmarket
+   in der Promo-Ausgabe). **Aus fremden Promo-Sammlungen wird nie geraten** — bei OP01-006 wäre
+   das eine Turnier-Version für 5.000 € gewesen.
 
-Innerhalb dieser Edition bleiben meist ein oder zwei Produkte:
+Stand 24.11.2026: 4.624 von 4.958 Motiven haben einen Preis — 2.404 eindeutig, 1.518 als
+Normal/Parallele-Paar, 702 unsicher. Ohne Preis bleiben vor allem Turnier- und Sammelmotive ohne
+erkennbares Cardmarket-Gegenstück; dort wählt der Nutzer selbst.
 
-| Fall | Behandlung | Anzahl |
-| --- | --- | --- |
-| 1 Produkt | eindeutig | 1.898 |
-| 2 Produkte | günstigere = normal, teurere = Alt-Art | 630 |
-| mehr / keine Edition | unsicher, günstigste als Normalversion | 285 |
+**Alle Versionen sind in der App wählbar** (`docs/data/versions.json`, täglich, 258 KB, gzip
+74 KB): je Nummer `[idProduct, idExpansion, Cent, [Motive]]`, die Motive sind die Plätze, deren
+automatische Version das ist (0 Normal, 1 `-ALT`, k `-ALTk`). Bewusst eine eigene Datei: App-
+Versionen bis 0.12 lesen `prices.json` streng und verlören bei einem geänderten Format alle
+Tagespreise. `prices.json` behält deshalb sein Format, inklusive `options`.
 
-### Zwei Annahmen, die man kennen muss
+### Der Fehler bis v0.12: japanische Preise für OP05 bis OP16
 
-1. **„Originaledition" = zuerst angelegte reine Edition.** Ohne Editionsnamen nicht beweisbar.
-   Besitzt jemand einen Nachdruck, bekommt er den Preis des Originals.
-2. **Bei zwei Produkten ist die teurere die Alt-Art.** Cardmarket benennt sie nicht
-   unterschiedlich. Wo beide ähnlich teuer sind, ist die Wahl folgenlos; wo sie weit
-   auseinanderliegen, trifft die Annahme zu.
+Die erste Fassung nahm als Originalausgabe die **zuerst angelegte** „reine" Ausgabe (90 % eines
+Sets). Japanische Booster erscheinen aber Monate vor den englischen, und Cardmarket legt ihre
+Ausgabe „(Non-English)" zuerst an. Ergebnis: Für **OP05 bis OP13, EB01 und EB02** zeigte die App
+die Preise der japanischen Auflage, für **OP14 bis OP16 und EB03** die der asiatischen. Nur OP01
+bis OP04 und OP17 waren englisch. Aufgefallen bei der Frage, ob die App ihre Preise „wie Scryfall"
+ermittelt. Der Test `Echte Daten: keine Originalausgabe in anderer Sprache` in
+`scripts/cardmarket-zuordnung.test.js` und der gleichnamige Dart-Test verhindern die Rückkehr.
 
-Beides ist in der App sichtbar (`PriceConfidence`) und pro Karte korrigierbar.
+Der Preisverlauf vor dem 24.11.2026 bleibt falsch — die englischen Preise jener Tage wurden nie
+gespeichert. Der Wertverlauf macht an dem Tag deshalb einen Sprung; die App-Anleitung sagt das.
 
-### Tagesaktualität
+### Tagesaktualität und die Wahl des Nutzers
 
-Die Preise stecken **nicht** fest in der App. `docs/data/prices.json` (159 KB) wird täglich per
-GitHub Action aktualisiert, die App lädt sie beim Start (`price_store.dart`). Ohne Netz gelten
-die zuletzt geladenen, davor die mitgelieferten.
+Die Preise stecken **nicht** fest in der App. `docs/data/prices.json` und `docs/data/versions.json`
+werden täglich per GitHub Action aktualisiert, die App lädt sie beim Start. Ohne Netz gelten die
+zuletzt geladenen, davor die mitgelieferten (`assets/versions.json`).
 
-**Wichtig:** Die Preiswahl des Nutzers wird als **Platz in der Versionsliste** gespeichert, nicht
-als Betrag. Sonst würde ausgerechnet die vom Nutzer korrigierte Karte als einzige auf einem alten
-Preis einfrieren, während sich alle anderen aktualisieren.
+Die Wahl des Nutzers wird als **Cardmarket-Produktnummer** gespeichert (`versionChoice` in
+`collection_v2`). Bis v0.12 war es der **Platz in der Preisliste** — der zeigte auf eine andere
+Version, sobald sich zwei Versionen im Preis überholten, also jeden Tag ein paar. Alte Plätze
+werden beim ersten Start einmalig übersetzt (`produktZumAltenPlatz`).
 
 ---
 
@@ -436,9 +491,14 @@ Zweitmeinung, kein Ersatz.
 
 ### Preise nach Verkäuferland oder Kartensprache
 
-Nicht möglich. Die Export-Dateien enthalten nur europaweite Aggregate (`avg`, `low`, `trend`,
-`avg1`, `avg7`, `avg30`, jeweils auch für Foil). Verkäuferland, Sprache und Zustand existieren bei
-Cardmarket nur auf **Angebotsebene** — erreichbar nur über die API oder die Website.
+Nach Verkäuferland und Zustand nicht möglich. Die Export-Dateien enthalten nur europaweite
+Aggregate (`avg`, `low`, `trend`, `avg1`, `avg7`, `avg30`, jeweils auch für Foil). Verkäuferland
+und Zustand existieren bei Cardmarket nur auf **Angebotsebene** — erreichbar nur über die API
+oder die Website.
+
+**Nach Sprache doch** (seit v0.13 erkannt): Japanische und asiatische Drucke führt Cardmarket als
+**eigene Ausgaben** („… (Non-English)", „… (Asia Region Legal)"). Über die Namen der versiegelten
+Produkte sind sie erkennbar und in der App als Version wählbar.
 
 > Teilweise entschärft: Über die CardTrader-API (oben) wären Zustand, Sprache und Verkäuferland
 > erreichbar — allerdings für CardTrader-Angebote, nicht für Cardmarket-Angebote.
@@ -454,9 +514,9 @@ betroffen und ausdrücklich zur Nutzung freigegeben.
 
 Nicht zuverlässig möglich. Beide tragen dieselbe Kartennummer in lateinischer Schrift. Das Artwork
 ist meist identisch, nur der Kartentext unterscheidet sich — zu wenig für einen 64-Bit-Bildhash.
-Eine Spracherkennung bräuchte ein zusätzliches japanisches ML-Kit-Modell in der App, und selbst
-dann ließen sich die Preise nicht trennen, weil Cardmarket ohne Editionsnamen nicht verrät, welches
-Produkt der japanische Druck ist.
+Eine Spracherkennung bräuchte ein zusätzliches japanisches ML-Kit-Modell in der App. Die Preise
+ließen sich inzwischen trennen (die japanischen Drucke liegen in den „(Non-English)"-Ausgaben),
+deshalb wählt der Nutzer seine Version in den Kartendetails selbst.
 
 **Hinweis:** Der „japanische" Katalog des npm-Pakets enthält trotz des Namens dieselben lateinischen
 Namen und englischen Effekttexte — nur die Bildadressen unterscheiden sich. Japanische Karten
@@ -508,6 +568,26 @@ rund 7½ Minuten, ein Folgebuild gut eine Minute.
 funktioniert. Und kurioserweise: eine kurze Plattform-Kennung (`Mozilla/5.0 (Windows NT 10.0;
 Win64; x64)`) kommt durch, eine ausführliche Chrome-Kennung wird blockiert. Außerdem drosselt die
 Seite bei schnell aufeinanderfolgenden Abrufen — daher 2,5 Sekunden Pause zwischen den Seiten.
+
+**Die Kamera lief im Hintergrund weiter (bis v0.12).** Der Scanner sitzt im `IndexedStack` und
+bleibt dort aufgebaut, auch wenn ein anderer Reiter offen ist. Seine Kamera lief deshalb immer -
+mit Texterkennung alle 350 ms. Wer in der Sammlung blätterte und das Handy über Karten hielt,
+bekam sie unbemerkt eingetragen; dazu kam der Akkuverbrauch. Jetzt bekommt `ScannerView` ein
+`aktiv` (nur Reiter 0), gibt die Kamera beim Wechsel frei und verwirft eine Erkennung, die vor
+dem Wechsel begonnen hat.
+
+**Besitzzählung im Deck-Reiter.** `_ownedCount` lief für jede Abfrage einmal durch die ganze
+Sammlung, mit zwei `toUpperCase` je Karte. Der Deck-Reiter fragt für rund 5.000 Turnierdecks mit
+je 15 bis 20 Karten — bei 1.000 gesammelten Karten über 80 Millionen Vergleiche je Aufbau, und
+weil der `IndexedStack` alle Reiter mit aufbaut, nach jedem einzelnen Scan. Jetzt wird je Aufbau
+einmal gezählt (`_besitzZaehlen`).
+
+**Netzabrufe ohne Zeitlimit.** `PriceStore` und `DeckStore` warteten ohne Limit; in einem WLAN mit
+Anmeldeseite hing die ganze Startkette, die Update-Prüfung wartete dahinter. Jetzt 15 s für den
+Verbindungsaufbau, 20 bis 45 s für die Antwort - wie bei Update und Verlauf.
+
+**Widget-Tests und echte Dateien.** Ein Test, der Schriften von der Platte lädt, hing endlos:
+In `testWidgets` werden echte Dateizugriffe nur innerhalb von `tester.runAsync(...)` fertig.
 
 **`| Select-Object -First` beendet Node mitten im Schreiben.** `node scripts/sync-cards.js |
 Select-Object -First 2` sollte nur die Ausgabe kürzen — PowerShell beendet aber den Prozess,
@@ -683,6 +763,10 @@ aus der App (v0.9.0), Übersicht mit Wert- und Preisverlauf und Set-Vervollstän
 Wunschliste (v0.11.0), eigene Decks mit Regelprüfung (v0.12.0).
 
 **Naheliegende Erweiterungen:**
+- Scanner auch für die weiteren Motive (`-ALT2` …): vorher an echten Kamerabildern messen, ob die
+  Treffsicherheit bei mehr und ähnlicheren Kandidaten hält
+- Version je Exemplar statt je Karte: Heute gilt eine gewählte Cardmarket-Version für alle
+  Exemplare derselben Karte; wer eine englische und eine asiatische hat, kann das nicht abbilden
 - Sperrliste in die Deckprüfung (bräuchte eine gepflegte Datenquelle)
 - Zustand der Karten erfassen (bei 4 von 6 Konkurrenz-Apps vorhanden)
 - Mehrere Karten gleichzeitig scannen (Binderseite) — riskant, die Stärke der App ist Treffsicherheit

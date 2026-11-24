@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'app_installer.dart';
 import 'card_matcher.dart';
 import 'card_model.dart';
+import 'card_versions.dart';
 import 'collection_export.dart';
 import 'collection_import.dart';
 import 'collection_store.dart';
@@ -67,8 +68,15 @@ class _HomePageState extends State<HomePage> {
   List<ScanFolder> _folders = const [];
   String _activeFolderId = CollectionStore.defaultFolderId;
 
-  /// Vom Nutzer gewaehlte Druckvariante je Karten-ID: der Platz in der Versionsliste.
-  final Map<String, int> _priceChoice = {};
+  /// Vom Nutzer gewaehlte Cardmarket-Version je Karten-ID: die Produktnummer.
+  final Map<String, int> _versionWahl = {};
+
+  /// Wahl im alten Format (Listenplatz, bis v0.12), bis sie uebersetzt ist.
+  Map<String, int> _alteWahl = const {};
+
+  /// Alle Cardmarket-Versionen je Kartennummer, mit Ausgabe und Preis.
+  VersionsDaten? _versionen;
+  final VersionStore _versionStore = VersionStore();
 
   /// Gespeicherte Scans, zu denen der mitgelieferte Katalog keine Karte kennt.
   ///
@@ -179,7 +187,7 @@ class _HomePageState extends State<HomePage> {
       await CollectionExport.share(
         entries: _collection,
         priceOf: _priceOf,
-        choiceOf: (card) => _priceChoice[card.id],
+        choiceOf: (card) => _versionWahl[card.id],
         folderName: (id) => _folders
             .firstWhere((f) => f.id == id, orElse: () => const ScanFolder(id: '', name: '—'))
             .name,
@@ -221,9 +229,10 @@ class _HomePageState extends State<HomePage> {
       _unresolvedScans = unresolved;
       _unreadableScans = state.unreadableScans;
       _loadFailed = state.loadFailed;
-      _priceChoice
+      _versionWahl
         ..clear()
-        ..addAll(state.priceChoice);
+        ..addAll(state.versionChoice);
+      _alteWahl = state.priceChoice;
       _collection
         ..clear()
         ..addAll(restored);
@@ -233,8 +242,19 @@ class _HomePageState extends State<HomePage> {
     _meineDecks.laden(state.myDecks);
 
     await _loadPrices();
-    _migrateLegacyChoices(state.legacyPriceAmounts, matcher);
+    await _loadVersionen();
+    _alteWahlUebersetzen(state.legacyPriceAmounts, matcher);
     await _loadDecks();
+  }
+
+  /// Versionen: zuerst der vorhandene Stand (zuletzt geladen oder mitgeliefert), dann im
+  /// Hintergrund der frische. Ohne Netz bleibt die App sofort benutzbar.
+  Future<void> _loadVersionen() async {
+    final vorhanden = await _versionStore.gespeichert() ?? await VersionStore.gebuendelt();
+    if (mounted && vorhanden != null) setState(() => _versionen = vorhanden);
+    unawaited(_versionStore.abrufen().then((frisch) {
+      if (mounted && frisch != null) setState(() => _versionen = frisch);
+    }));
   }
 
   Future<void> _loadPrices() async {
@@ -244,28 +264,28 @@ class _HomePageState extends State<HomePage> {
     if (mounted && remote != null) setState(() => _livePrices = remote);
   }
 
-  /// Eine fruehere Fassung speicherte die Preisauswahl als Betrag. Betraege veralten,
-  /// sobald die Preise aktualisiert werden - deshalb wird daraus einmalig der Platz
-  /// in der Versionsliste bestimmt.
-  void _migrateLegacyChoices(Map<String, double> legacy, CardMatcher matcher) {
-    if (legacy.isEmpty) return;
-    var changed = false;
-    legacy.forEach((cardId, amount) {
+  /// Uebersetzt fruehere Preiswahlen einmalig in Produktnummern.
+  ///
+  /// Bis v0.12 war die Wahl ein Platz in der aufsteigend sortierten Preisliste - der zeigte
+  /// auf eine andere Version, sobald sich zwei Versionen im Preis ueberholten. Ganz alte
+  /// Fassungen speicherten sogar einen Betrag. Beides wird hier zur Produktnummer.
+  void _alteWahlUebersetzen(Map<String, double> betraege, CardMatcher matcher) {
+    final versionen = _versionen;
+    if (versionen == null || (_alteWahl.isEmpty && betraege.isEmpty)) return;
+    _alteWahl.forEach((cardId, platz) {
       final card = matcher.byId(cardId);
-      if (card == null) return;
-      final options = _optionsFor(card);
-      if (options.length < 2) return;
-      var best = 0;
-      for (var i = 1; i < options.length; i++) {
-        if ((options[i] - amount).abs() < (options[best] - amount).abs()) best = i;
-      }
-      _priceChoice[cardId] = best;
-      changed = true;
+      if (card == null || _versionWahl.containsKey(cardId)) return;
+      final produkt = produktZumAltenPlatz(versionen.von(card.baseId), platz);
+      if (produkt != null) _versionWahl[cardId] = produkt;
     });
-    if (changed) {
-      setState(() {});
-      _persist();
-    }
+    betraege.forEach((cardId, betrag) {
+      final card = matcher.byId(cardId);
+      if (card == null || _versionWahl.containsKey(cardId)) return;
+      final produkt = produktZumAltenBetrag(versionen.von(card.baseId), betrag);
+      if (produkt != null) _versionWahl[cardId] = produkt;
+    });
+    setState(() => _alteWahl = const {});
+    _persist();
   }
 
   Future<void> _loadDecks() async {
@@ -287,24 +307,23 @@ class _HomePageState extends State<HomePage> {
         // Die nicht aufloesbaren Eintraege muessen mit, sonst loescht sie der
         // naechste Speichervorgang endgueltig.
         scans: [..._collection.map((e) => e.toStored()), ..._unresolvedScans],
-        priceChoice: _priceChoice,
+        versionChoice: _versionWahl,
+        priceChoice: _alteWahl,
         unreadableScans: _unreadableScans,
         wishlist: _wunschliste.eintraege,
         myDecks: _meineDecks.decks,
       ));
 
-  /// Alle Cardmarket-Versionen dieser Kartennummer - bevorzugt tagesaktuell,
-  /// sonst aus dem mitgelieferten Katalog.
-  List<double> _optionsFor(OpCard card) =>
-      _livePrices?.optionsByBaseId[card.baseId] ?? card.priceOptions;
+  /// Alle Cardmarket-Versionen dieser Kartennummer, guenstigste zuerst.
+  List<KartenVersion> _versionenVon(OpCard card) => _versionen?.von(card.baseId) ?? const [];
 
   /// Geltender Einzelpreis, in dieser Reihenfolge:
   /// vom Nutzer gewaehlte Version -> tagesaktueller Preis -> Preis aus dem Katalog.
   double _priceOf(OpCard card) {
-    final choice = _priceChoice[card.id];
-    if (choice != null) {
-      final options = _optionsFor(card);
-      if (choice < options.length) return options[choice];
+    final wahl = _versionWahl[card.id];
+    if (wahl != null) {
+      final version = _versionen?.produkt(card.baseId, wahl);
+      if (version != null) return version.preis;
     }
     return _livePrices?.byCardId[card.id] ?? card.price?.amount ?? 0;
   }
@@ -312,23 +331,19 @@ class _HomePageState extends State<HomePage> {
   /// Stand der geltenden Preisdaten.
   String get _priceAsOf => _livePrices?.asOf ?? '';
 
-  void _choosePrice(OpCard card, int? optionIndex) {
+  /// Merkt sich eine Version fuer diese Karte - oder bei null wieder die automatische.
+  void _waehleVersion(OpCard card, KartenVersion? version) {
     setState(() {
-      if (optionIndex == null) {
-        _priceChoice.remove(card.id);
+      if (version == null) {
+        _versionWahl.remove(card.id);
       } else {
-        _priceChoice[card.id] = optionIndex;
+        _versionWahl[card.id] = version.idProduct;
       }
     });
     _persist();
-    if (!mounted) return;
-    final options = _optionsFor(card);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(optionIndex == null
-          ? 'Preis zurückgesetzt: ${card.name}'
-          : 'Preis gesetzt: ${options[optionIndex].toStringAsFixed(2)} € für ${card.name}'),
-      duration: const Duration(seconds: 2),
-    ));
+    _melden(version == null
+        ? '${card.name}: Preis wieder automatisch'
+        : '${card.name}: ${version.ausgabe} · ${formatEuro(version.preis)}');
   }
 
   ScanFolder get _activeFolder => _folders.firstWhere(
@@ -375,21 +390,25 @@ class _HomePageState extends State<HomePage> {
     _persist();
   }
 
-  void _switchArtwork(CollectionEntry entry, OpCard replacement) {
-    final index = _collection.indexOf(entry);
-    if (index == -1) return;
+  /// Stellt die angegebenen Exemplare auf ein anderes Motiv um.
+  ///
+  /// [wahlZuruecksetzen]: Der Nutzer hat eine Version gewaehlt, die automatisch zu diesem
+  /// Motiv gehoert - eine fruehere eigene Wahl fuer das Motiv gilt dann nicht mehr.
+  void _switchArtwork(List<CollectionEntry> entries, OpCard replacement, {bool wahlZuruecksetzen = false}) {
+    var umgestellt = 0;
     setState(() {
-      _collection[index] = CollectionEntry(
-        card: replacement,
-        folderId: entry.folderId,
-        how: entry.how,
-        at: entry.at,
-      );
+      for (final entry in entries) {
+        final index = _collection.indexOf(entry);
+        if (index == -1) continue;
+        _collection[index] = CollectionEntry(card: replacement, folderId: entry.folderId, how: entry.how, at: entry.at);
+        umgestellt++;
+      }
+      if (wahlZuruecksetzen) _versionWahl.remove(replacement.id);
     });
+    if (umgestellt == 0) return;
     _persist();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Artwork gewechselt: ${replacement.name}'), duration: const Duration(seconds: 2)),
-    );
+    final motiv = replacement.produkt == null ? replacement.motivName : '${replacement.motivName} · ${replacement.produkt}';
+    _melden(umgestellt == 1 ? 'Motiv gewechselt: $motiv' : '$umgestellt Exemplare umgestellt: $motiv');
   }
 
   // ------------------------------------------------------------------- Import
@@ -565,9 +584,19 @@ class _HomePageState extends State<HomePage> {
     ));
   }
 
-  int _ownedCount(String baseId) => _collection
-      .where((e) => e.card.baseId.toUpperCase() == baseId.toUpperCase())
-      .length;
+  /// Wie oft jede Kartennummer in der Sammlung liegt (Artwork egal).
+  ///
+  /// Einmal je Aufbau gezaehlt statt je Abfrage: Der Deck-Reiter fragt fuer rund 5.000
+  /// Turnierdecks mit je 15 bis 20 Karten - bei 1.000 gesammelten Karten waren das ueber
+  /// 80 Millionen Vergleiche bei jedem Aufbau, also auch nach jedem einzelnen Scan.
+  Map<String, int> _besitzZaehlen() {
+    final zaehler = <String, int>{};
+    for (final e in _collection) {
+      final nummer = e.card.baseId.toUpperCase();
+      zaehler[nummer] = (zaehler[nummer] ?? 0) + 1;
+    }
+    return zaehler;
+  }
 
   OpCard? _cardOf(String baseId) {
     final matcher = _matcher;
@@ -699,6 +728,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final update = _update;
+    final besitz = _besitzZaehlen();
+    int besitzVon(String baseId) => besitz[baseId.toUpperCase()] ?? 0;
     return Scaffold(
       body: Stack(
         children: [
@@ -707,6 +738,10 @@ class _HomePageState extends State<HomePage> {
             children: [
               ScannerView(
                 matcher: _matcher,
+                // Die Kamera laeuft nur, solange der Reiter sichtbar ist. Vorher lief sie im
+                // IndexedStack immer weiter - und nahm Karten auf, waehrend man die Sammlung
+                // ansah und das Handy ueber dem Tisch hielt.
+                aktiv: _tab == 0,
                 activeFolderName: _activeFolder.name,
                 onScanned: _onScanned,
                 onPickFolder: _manageFolders,
@@ -723,9 +758,9 @@ class _HomePageState extends State<HomePage> {
                 onCheckUpdate: () => _updatePruefen(manuell: true),
                 appVersion: _version,
                 priceOf: _priceOf,
-                optionsFor: _optionsFor,
-                choiceOf: (card) => _priceChoice[card.id],
-                onChoosePrice: _choosePrice,
+                versionenVon: _versionenVon,
+                wahlVon: (card) => _versionWahl[card.id],
+                onWaehleVersion: _waehleVersion,
                 priceAsOf: _priceAsOf,
                 historyStore: _historyStore,
                 wunschliste: _wunschliste,
@@ -744,13 +779,13 @@ class _HomePageState extends State<HomePage> {
               DecksView(
                 data: _decks,
                 loading: _decksLoading,
-                ownedCount: _ownedCount,
+                ownedCount: besitzVon,
                 cardOf: _cardOf,
                 aufWunschliste: _aufWunschliste,
                 umgebung: DeckUmgebung(
                   decks: _meineDecks,
                   matcher: _matcher,
-                  besitzZurNummer: _ownedCount,
+                  besitzZurNummer: besitzVon,
                   aufWunschliste: _aufWunschliste,
                 ),
                 onRefresh: _loadDecks,

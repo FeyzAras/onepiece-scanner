@@ -81,10 +81,9 @@ class _OverviewViewState extends State<OverviewView> {
       _berechnetFuer = signatur;
     });
 
-    if (neu) widget.historyStore.speicherLeeren();
     final ids = widget.entries.map((e) => e.card.id).toList();
     final codes = ids.map((id) => id.split('-').first).toSet();
-    final historien = await widget.historyStore.ladenMehrere(codes);
+    final historien = await widget.historyStore.ladenMehrere(codes, erzwingen: neu);
     final verlauf = WertVerlauf.berechnen(kartenIds: ids, historien: historien);
 
     if (!mounted) return;

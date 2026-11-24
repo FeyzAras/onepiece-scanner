@@ -53,7 +53,7 @@ jobs:
 
       - name: Aenderungen committen
         run: |
-          git add docs/data/prices.json docs/data/history
+          git add docs/data/prices.json docs/data/history docs/data/versions.json
           if git diff --cached --quiet; then
             echo "Keine Preisaenderungen."
             exit 0

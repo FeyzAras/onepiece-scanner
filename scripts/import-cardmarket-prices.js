@@ -1,4 +1,5 @@
-// Spielt echte Cardmarket-Preise in data/cards.normalized.json ein.
+// Spielt echte Cardmarket-Preise in data/cards.normalized.json ein und schreibt
+// data/versions.json - alle Cardmarket-Versionen je Kartennummer, mit Ausgabe.
 //
 // Quelle: die von Cardmarket selbst taeglich veroeffentlichten Export-Dateien
 // (angekuendigt 07/2025, ausdruecklich zur freien Nutzung in eigenen Anwendungen).
@@ -6,35 +7,24 @@
 //
 // ── Das Zuordnungsproblem ────────────────────────────────────────────────────
 // Cardmarket fuehrt pro Kartennummer im Schnitt 4,2 Produkte, teils ueber 20:
-// Originaldruck, Alt-Art, Nachdrucke in spaeteren Sets, Promos, Turnierpreise.
-// Bei rund 80 % der Nummern liegt zwischen guenstigster und teuerster Version
-// mindestens Faktor 5 - bei OP01-001 zwischen 1,87 EUR und 610 EUR.
-// Einfach "irgendeinen" Preis zu nehmen waere also grob irrefuehrend.
+// Originaldruck, Alt-Art, Nachdrucke in spaeteren Sets, Promos, Turnierpreise, dazu
+// asiatische und nicht-englische Auflagen. Bei rund 80 % der Nummern liegt zwischen
+// guenstigster und teuerster Version mindestens Faktor 5 - bei OP01-001 zwischen
+// 1,96 EUR und 620 EUR. Einfach "irgendeinen" Preis zu nehmen waere grob irrefuehrend.
 //
-// ── Wie hier zugeordnet wird ─────────────────────────────────────────────────
-// Cardmarket liefert keine Editionsnamen, nur Nummern (idExpansion). Welches Set
-// eine Edition ist, laesst sich aber aus den enthaltenen Kartennummern ableiten:
-// Enthaelt eine Edition zu >=90 % Karten mit der Vorsilbe "OP01", ist es das OP01-Set.
-// Pro Set wird die **zuerst angelegte** solche Edition als Originaldruck genommen.
-//
-// Innerhalb dieser Edition bleiben je Kartennummer meist ein oder zwei Produkte:
-//   1 Produkt  -> eindeutig
-//   2 Produkte -> normales Artwork und Alt-Art. Welches welches ist, sagt Cardmarket
-//                 nicht (beide heissen identisch). Angenommen wird: die teurere ist
-//                 die Alt-Art. Wo beide fast gleich teuer sind, ist die Wahl ohnehin
-//                 folgenlos; wo sie weit auseinanderliegen, trifft die Annahme zu.
-//   mehr       -> guenstigste als Normalversion, teuerste als Alt-Art, als unsicher markiert
-//
-// Jede Karte bekommt zusaetzlich `priceOptions`: alle Cardmarket-Versionen dieser
-// Nummer mit Preis. Damit kann die App die Spanne anzeigen und der Nutzer umschalten,
-// falls die Zuordnung danebenliegt.
+// Wie zugeordnet wird, steht in cardmarket-zuordnung.js. Kurz: Jedes Bandai-Motiv
+// nennt sein Produkt; darueber wird die Cardmarket-Ausgabe gesucht, und innerhalb der
+// Ausgabe nach Preis verteilt. Jede Karte bekommt
+//   price         - die automatisch zugeordnete Version, mit "confidence"
+//   priceOptions  - alle Preise dieser Nummer aufsteigend (nur noch fuer App-Versionen
+//                   bis 0.12, die die Wahl als Listenplatz speichern)
+// und data/versions.json die vollstaendige Liste zum Auswaehlen in der App.
 
 const fs = require("fs");
 const path = require("path");
+const Z = require("./cardmarket-zuordnung");
 
 const DATA = path.join(__dirname, "..", "data");
-const NUMBER_RE = /\(([A-Z]{1,4}\d{0,2})-(\d{3})\)/;
-const PURE_SHARE = 0.9; // ab diesem Anteil gilt eine Edition als eindeutig einem Set zugehoerig
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(path.join(DATA, file), "utf8").replace(/^﻿/, ""));
@@ -52,147 +42,123 @@ function pickPrice(entry) {
   return null;
 }
 
-/** Ordnet jeder Cardmarket-Edition das Set zu, aus dem ihre Karten stammen. */
-function mapExpansionsToSets(products) {
-  const perExpansion = new Map();
-  for (const p of products) {
-    const m = NUMBER_RE.exec(p.name);
-    if (!m) continue;
-    if (!perExpansion.has(p.idExpansion)) {
-      perExpansion.set(p.idExpansion, { total: 0, sets: new Map(), firstAdded: p.dateAdded });
-    }
-    const e = perExpansion.get(p.idExpansion);
-    e.total++;
-    e.sets.set(m[1], (e.sets.get(m[1]) || 0) + 1);
-    if (p.dateAdded < e.firstAdded) e.firstAdded = p.dateAdded;
-  }
-
-  // Pro Set die zuerst angelegte "reine" Edition = Originaldruck
-  const mainExpansionOfSet = new Map();
-  for (const [idExpansion, e] of perExpansion) {
-    const [topSet, topCount] = [...e.sets.entries()].sort((a, b) => b[1] - a[1])[0];
-    if (topCount / e.total < PURE_SHARE) continue; // gemischte Edition (Promos, Sammlungen)
-    const current = mainExpansionOfSet.get(topSet);
-    if (!current || e.firstAdded < current.firstAdded) {
-      mainExpansionOfSet.set(topSet, { idExpansion, firstAdded: e.firstAdded, size: e.total });
-    }
-  }
-  return mainExpansionOfSet;
+/// Eine Version fuer die App, so knapp wie moeglich - die Datei wird taeglich geladen:
+/// [idProduct, idExpansion, Preis in Cent, [Motive]?]
+/// Motive = Plaetze der Motive, deren automatische Version das ist (0 Normal, 1 -ALT,
+/// k -ALTk). Meist eins, bei einem Nachdruck auch zwei. Fehlt, wenn die Version keinem
+/// Motiv zugeordnet ist - die gibt es nur zum Auswaehlen.
+function versionsEintrag(p, motiveJeProdukt) {
+  const e = [p.idProduct, p.idExpansion, Math.round(p.amount * 100)];
+  const motive = motiveJeProdukt.get(p.idProduct);
+  if (motive && motive.length) e.push([...motive].sort((a, b) => a - b));
+  return e;
 }
 
 function main() {
   const productFile = readJson("cm_products_18.json");
   const priceFile = readJson("cm_prices_18.json");
+  const nonsinglesDatei = path.join(DATA, "cm_nonsingles_18.json");
+  const nonsingles = fs.existsSync(nonsinglesDatei) ? readJson("cm_nonsingles_18.json").products : [];
+  if (!nonsingles.length) console.warn("Hinweis: cm_nonsingles_18.json fehlt - Ausgaben bleiben ohne Namen.");
   const cards = readJson("cards.normalized.json");
 
   const priceByProduct = new Map(priceFile.priceGuides.map((p) => [p.idProduct, p]));
-  const mainExpansionOfSet = mapExpansionsToSets(productFile.products);
+  const ausgaben = Z.ausgabenBenennen(productFile.products, nonsingles);
+  const ctx = { ausgaben, haupt: Z.hauptAusgaben(productFile.products, ausgaben) };
 
-  // Alle Produkte je Kartennummer sammeln, mit Preis und Edition
+  // Alle Produkte je Kartennummer, mit Preis und Ausgabe
   const byNumber = new Map();
   let withoutNumber = 0;
   for (const p of productFile.products) {
-    const m = NUMBER_RE.exec(p.name);
+    const m = Z.NUMMER_RE.exec(p.name);
     if (!m) { withoutNumber++; continue; }
-    const cardNumber = `${m[1]}-${m[2]}`;
     const price = pickPrice(priceByProduct.get(p.idProduct));
     if (!price) continue;
-    if (!byNumber.has(cardNumber)) byNumber.set(cardNumber, []);
-    byNumber.get(cardNumber).push({
-      idProduct: p.idProduct,
-      idExpansion: p.idExpansion,
-      setPrefix: m[1],
-      ...price,
-    });
+    const nummer = `${m[1]}-${m[2]}`;
+    if (!byNumber.has(nummer)) byNumber.set(nummer, []);
+    byNumber.get(nummer).push({ idProduct: p.idProduct, idExpansion: p.idExpansion, ...price });
+  }
+
+  const motiveJeNummer = new Map();
+  for (const card of cards) {
+    if (!motiveJeNummer.has(card.baseId)) motiveJeNummer.set(card.baseId, []);
+    motiveJeNummer.get(card.baseId).push(card);
   }
 
   const asOf = (priceFile.createdAt || "").slice(0, 10);
-  const stats = { eindeutig: 0, paar: 0, mehrdeutig: 0, ohneHauptedition: 0, ohnePreis: 0 };
+  const stats = { eindeutig: 0, paar: 0, unsicher: 0, ohnePreis: 0 };
+  const versionen = {};
+  const benutzt = new Set();
 
-  /** Waehlt fuer eine Kartennummer die Preise fuer Normalversion und Alt-Art. */
-  function resolve(cardNumber) {
-    const all = byNumber.get(cardNumber);
-    if (!all || all.length === 0) return null;
+  for (const [nummer, motive] of motiveJeNummer) {
+    const produkte = byNumber.get(nummer) || [];
+    const { standard } = produkte.length ? Z.ordneZu(nummer, motive, produkte, ctx) : { standard: new Map() };
+    const optionen = [...produkte].sort((a, b) => a.amount - b.amount).map((p) => p.amount);
 
-    const setPrefix = all[0].setPrefix;
-    const main = mainExpansionOfSet.get(setPrefix);
-    let candidates = main ? all.filter((x) => x.idExpansion === main.idExpansion) : [];
-    let confidence;
-
-    if (candidates.length === 0) {
-      // Keine Hauptedition gefunden (Promo, gemischte Edition): alles heranziehen
-      candidates = all;
-      confidence = "unsicher";
-      stats.ohneHauptedition++;
-    } else if (candidates.length === 1) {
-      confidence = "eindeutig";
-      stats.eindeutig++;
-    } else if (candidates.length === 2) {
-      confidence = "paar";
-      stats.paar++;
-    } else {
-      confidence = "unsicher";
-      stats.mehrdeutig++;
+    for (const card of motive) {
+      const s = standard.get(card.id);
+      if (!s) {
+        delete card.price;
+        stats.ohnePreis++;
+      } else {
+        card.price = {
+          amount: s.produkt.amount,
+          currency: "EUR",
+          basis: s.produkt.basis,
+          source: "cardmarket",
+          asOf,
+          idProduct: s.produkt.idProduct,
+          // eindeutig | paar | unsicher - wie sicher die Zuordnung zur Druckvariante ist
+          confidence: s.sicherheit,
+        };
+        stats[s.sicherheit]++;
+      }
+      if (optionen.length > 1) card.priceOptions = optionen;
+      else delete card.priceOptions;
     }
 
-    const sorted = [...candidates].sort((a, b) => a.amount - b.amount);
-    const guenstigste = sorted[0];
-    const teuerste = sorted[sorted.length - 1];
-
-    return {
-      normal: guenstigste,
-      alt: teuerste,
-      confidence,
-      options: [...all].sort((a, b) => a.amount - b.amount),
-    };
-  }
-
-  const resolvedCache = new Map();
-  let matched = 0;
-
-  for (const card of cards) {
-    if (!resolvedCache.has(card.baseId)) resolvedCache.set(card.baseId, resolve(card.baseId));
-    const resolved = resolvedCache.get(card.baseId);
-
-    if (!resolved) {
-      delete card.price;
-      delete card.priceOptions;
-      stats.ohnePreis++;
-      continue;
+    // Eine Auswahl braucht es nur, wenn es etwas zu waehlen gibt
+    if (produkte.length > 1 || (produkte.length && motive.length > 1)) {
+      const motiveJeProdukt = new Map();
+      for (const [id, s] of standard) {
+        const p = s.produkt.idProduct;
+        if (!motiveJeProdukt.has(p)) motiveJeProdukt.set(p, []);
+        motiveJeProdukt.get(p).push(Z.motivIndex(id, nummer));
+      }
+      versionen[nummer] = [...produkte]
+        .sort((a, b) => a.amount - b.amount || a.idProduct - b.idProduct)
+        .map((p) => {
+          benutzt.add(p.idExpansion);
+          return versionsEintrag(p, motiveJeProdukt);
+        });
     }
-
-    const chosen = card.alt ? resolved.alt : resolved.normal;
-    card.price = {
-      amount: chosen.amount,
-      currency: "EUR",
-      basis: chosen.basis,
-      source: "cardmarket",
-      asOf,
-      idProduct: chosen.idProduct,
-      // eindeutig | paar | unsicher - wie sicher die Zuordnung zur Druckvariante ist
-      confidence: resolved.confidence,
-    };
-    // Nur die Betraege, aufsteigend - die App zeigt damit die Spanne und laesst umschalten.
-    // Bei nur einer Version waere die Liste redundant zum Preis selbst.
-    if (resolved.options.length > 1) {
-      card.priceOptions = resolved.options.map((o) => o.amount);
-    } else {
-      delete card.priceOptions;
-    }
-    matched++;
   }
 
   fs.writeFileSync(path.join(DATA, "cards.normalized.json"), JSON.stringify(cards, null, 2), "utf8");
 
+  const ausgabenNamen = {};
+  for (const id of [...benutzt].sort((a, b) => a - b)) ausgabenNamen[id] = ausgaben.get(id)?.label || `Ausgabe ${id}`;
+  fs.writeFileSync(
+    path.join(DATA, "versions.json"),
+    JSON.stringify({ asOf, ausgaben: ausgabenNamen, versionen }),
+    "utf8",
+  );
+
+  const matched = cards.length - stats.ohnePreis;
   const pct = ((matched / cards.length) * 100).toFixed(1);
+  const allgemein = [...ausgaben.values()].filter((a) => a.allgemein).length;
   console.log(`Cardmarket-Stand:        ${asOf}`);
   console.log(`Produkte gelesen:        ${productFile.products.length} (ohne Kartennummer: ${withoutNumber})`);
-  console.log(`Editionen -> Set erkannt: ${mainExpansionOfSet.size}`);
+  console.log(`Ausgaben benannt:        ${ausgaben.size - allgemein} von ${ausgaben.size} (Rest: Promo-Sammlungen)`);
+  console.log(`Hauptausgaben je Set:    ${ctx.haupt.size}`);
   console.log(`Karten mit Preis:        ${matched} von ${cards.length} (${pct} %)`);
   console.log(`  davon Zuordnung eindeutig : ${stats.eindeutig}`);
   console.log(`  normal + Alt-Art (Paar)   : ${stats.paar}`);
-  console.log(`  unsicher                  : ${stats.mehrdeutig + stats.ohneHauptedition}`);
+  console.log(`  unsicher                  : ${stats.unsicher}`);
   console.log(`  ohne Preis                : ${stats.ohnePreis}`);
+  console.log(`Versionslisten:          ${Object.keys(versionen).length} Nummern, ${Object.values(versionen).reduce((s, v) => s + v.length, 0)} Versionen`);
 }
 
-main();
+module.exports = { pickPrice, versionsEintrag };
+
+if (require.main === module) main();

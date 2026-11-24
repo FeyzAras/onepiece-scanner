@@ -68,6 +68,13 @@ So läuft es ab:
 5. Nächste Karte davor halten. Dieselbe Karte wird innerhalb von 5 Sekunden **nicht doppelt**
    eingetragen — du kannst sie also ruhig im Bild lassen.
 
+Die Kamera läuft nur, solange der Reiter **Scannen** offen ist. Wechselst du in die Sammlung, geht
+sie aus — bis Version 0.12 lief sie weiter und konnte dabei unbemerkt Karten aufnehmen, die gerade
+im Bild lagen.
+
+Erkannt wird beim Scannen die Normalversion oder die erste Alt-Art einer Nummer. Gibt es weitere
+Motive (Nachdrucke, Sammel-Editionen), stellst du deine Karte danach in den Kartendetails um.
+
 ### Warum die Kartennummer, nicht der Name?
 
 Der Kartenname allein reicht nicht aus. Viele Karten heißen gleich, und Namen anderer Karten
@@ -79,13 +86,14 @@ sie einen Hinweis („… erkannt – Kartennummer unten rechts ins Bild halten"
 
 ### Und wenn zwei Karten dieselbe Nummer haben?
 
-Das kommt oft vor: Zu 1.083 Kartennummern gibt es **zwei Versionen** — normales Artwork und
-Alt-Art. Nummer und Name sind identisch, nur das Bild unterscheidet sich.
+Das kommt oft vor: Zu über 1.000 Kartennummern gibt es **mehrere Motive** — normales Artwork,
+Parallelen, Nachdrucke in späteren Produkten. Nummer und Name sind identisch, nur das Bild
+unterscheidet sich.
 
-Die App vergleicht deshalb zusätzlich das Kamerabild mit beiden Versionen: Für jedes Kartenbild
-ist ein Bild-Fingerabdruck hinterlegt, die App berechnet denselben aus dem Kamerabild und nimmt
-die ähnlichere Version. Liegt sie trotzdem mal daneben, kannst du in den Kartendetails mit einem
-Tipp auf **„wechseln"** das andere Artwork wählen.
+Die App vergleicht deshalb zusätzlich das Kamerabild mit der Normalversion und der ersten Alt-Art:
+Für diese Bilder ist ein Bild-Fingerabdruck hinterlegt, die App berechnet denselben aus dem
+Kamerabild und nimmt die ähnlichere Version. Liegt sie daneben oder hast du ein weiteres Motiv,
+tippst du in den Kartendetails unter **Motiv** auf das richtige Bild.
 
 **Der runde Knopf unten ist kein Auslöser**, sondern Pause/Weiter. Nützlich, wenn du kurz etwas
 anderes machst und nicht willst, dass die App im Hintergrund weiter Karten einsammelt.
@@ -118,9 +126,10 @@ Kartengitter mit Bild, Name, Nummer und Preis.
 | **Ordner-Knöpfe** | Auf einen Ordner einschränken oder „Alle Ordner" |
 | **Sortierung** | Zuletzt gescannt, Name, Set (OP13, OP14, OP17 …) oder Preis |
 
-Auf eine Karte tippen öffnet die Details: Preis mit Stand, Effekttext, Anzahl, und — falls es die
-Karte mit **anderem Artwork** gibt — einen Knopf zum Wechseln. Auf das Bild tippen zeigt es im
-**Vollbild**, dort lässt es sich mit zwei Fingern vergrößern.
+Auf eine Karte tippen öffnet die Details: Preis mit Stand, Effekttext, Anzahl — und, wenn es die
+Nummer mehrfach gibt, **alle Motive und alle Cardmarket-Versionen zum Auswählen** (siehe
+[Welche Version hast du?](#welche-version-hast-du-ab-version-0130)). Auf das Bild tippen zeigt es
+im **Vollbild**, dort lässt es sich mit zwei Fingern vergrößern.
 
 ### Decks
 
@@ -154,7 +163,7 @@ Dateien**, die zusammen weitergegeben werden:
 
 Die CSV enthält Kartennummer, Name, Set, Seltenheit, Kartentyp, Farbe, Anzahl, Einzel- und
 Gesamtpreis, Ordner, Erkennungsart und Scandatum. Ganz rechts stehen drei technische Spalten
-(Alt-Art, Ordner-ID, Preiswahl) — die braucht die App beim Wiedereinlesen, im Alltag kannst du
+(Alt-Art, Ordner-ID, gewählte Cardmarket-Version) — die braucht die App beim Wiedereinlesen, im Alltag kannst du
 sie ignorieren.
 
 Gesichert wird **immer die ganze Sammlung**, auch wenn gerade ein Suchbegriff oder ein
@@ -330,44 +339,63 @@ Deine Decks stecken in der **Sicherung** mit drin und kommen beim Wiederherstell
 
 ## 4. Zu den Preisen
 
-Die Preise sind **echte Cardmarket-Preise** — 3.865 von 3.868 Karten (99,9 %) haben einen.
-Angezeigt wird Cardmarkets **Trendpreis**, der Stand steht unter dem Betrag.
+Die Preise sind **echte Cardmarket-Preise**. Angezeigt wird Cardmarkets **Trendpreis**, der Stand
+steht unter dem Betrag. Fehlt der Trend, nimmt die App einen Durchschnittspreis — genauso macht es
+Scryfall bei Magic.
 
 Sie stammen aus den Export-Dateien, die Cardmarket seit Juli 2025 selbst täglich veröffentlicht und
 ausdrücklich zur Nutzung in eigenen Anwendungen freigibt — kein API-Zugang, kein Scraping.
 
-### Welche Version wird bepreist?
+### Welche Version hast du? (ab Version 0.13.0)
 
-Das ist der kniffligste Teil. Cardmarket führt **pro Kartennummer mehrere Produkte**: Originaldruck,
-Alt-Art, Nachdrucke in späteren Sets, Promos, Turnierpreise. Im Schnitt 4,2 Stück, bei manchen über
-20 — und die Preise liegen weit auseinander. Bei OP01-001 zwischen **1,87 € und 610 €**.
+Cardmarket führt **pro Kartennummer oft mehrere Versionen**: den Booster-Druck, Parallelen,
+Nachdrucke in späteren Produkten (etwa „The Best"), Promos — und dazu asiatische und japanische
+Auflagen. Die Preise liegen weit auseinander: Edward.Newgate **OP17-040** gibt es viermal, zwischen
+0,06 € und 74 €.
 
-Die App ordnet automatisch zu: Sie erkennt, welche Cardmarket-Edition dem Originalset der Karte
-entspricht, und unterscheidet darin normales Artwork von Alt-Art. In den Kartendetails steht,
-wie sicher das war:
+In den **Kartendetails** (Karte in der Sammlung antippen) stehen deshalb zwei Abschnitte:
+
+| Abschnitt | Was du dort machst |
+| --- | --- |
+| **Motiv** | Alle Bilder dieser Nummer — Normalversion, Parallelen, Nachdrucke, jeweils mit dem Produkt, aus dem sie stammen. Tippe auf das Bild, das deine Karte zeigt (lange drücken vergrößert). Hast du mehrere Exemplare, fragt die App, ob alle oder nur eins umgestellt werden |
+| **Welche Version hast du?** | Alle Cardmarket-Versionen, nach Ausgabe sortiert, mit Preis. Tippe auf deine. Gehört sie zu einem anderen Motiv — etwa die 25-€-Version zur Parallele —, stellt die App das Motiv gleich mit um |
+
+Die App schlägt selbst eine Version vor und sagt, wie sicher das ist:
 
 | Angabe | Bedeutung |
 | --- | --- |
-| ✅ **eindeutig zugeordnet** | Es gibt nur eine Version — der Preis stimmt sicher |
-| ⚠️ **normal/Alt-Art unterschieden** | Zwei Versionen; zugeordnet über die Annahme, dass die Alt-Art die teurere ist |
-| ❓ **Zuordnung unsicher** | Mehr als zwei Versionen oder keine eindeutige Originaledition |
+| ✅ **automatisch, eindeutig zugeordnet** | In der Ausgabe dieses Motivs gibt es genau eine Version |
+| ⚠️ **automatisch, Normal und Parallele unterschieden** | Zwei Versionen; die teurere gilt als Parallele |
+| ❓ **automatisch, Zuordnung unsicher** | Mehrere Versionen in derselben Ausgabe — bitte kurz prüfen |
+| ❓ **keine Version zugeordnet** | Zu diesem Motiv (meist ein Turnier- oder Sammelmotiv) fand sich bei Cardmarket nichts Passendes — bitte selbst wählen |
+| ✓ **von dir gewählt** | Deine Wahl. „zurücksetzen" geht zurück zum Vorschlag |
 
-**Stimmt der Preis nicht, kannst du ihn selbst wählen.** In den Kartendetails stehen alle
-Cardmarket-Versionen dieser Nummer als antippbare Beträge. Deine Wahl wird dauerhaft gespeichert
-und mit „von dir ausgewählt" markiert; über „zurücksetzen" geht es wieder zur Automatik.
+Deine Wahl gilt für alle Exemplare dieser Karte und bleibt gespeichert. In der Sammlung zeigt ein
+kleines **❓** neben dem Betrag, dass der Vorschlag unsicher war.
 
-In der Übersicht zeigt ein kleines **❓** neben dem Betrag an, dass die Zuordnung unsicher ist.
+> **„Asia Region Legal"** sind englische Karten für den asiatischen Markt, **„Non-English"** meist
+> japanische. Beide sind bei Cardmarket oft viel günstiger. Von sich aus nimmt die App immer die
+> normale englische Ausgabe.
+
+> ⚠️ **Mit Version 0.13.0 ändern sich viele Preise — zu Recht.** Bis dahin hat die App für die Sets
+> **OP05 bis OP16 und EB01 bis EB03** versehentlich die Preise der japanischen bzw. asiatischen
+> Auflage gezeigt: Cardmarket legt diese Ausgaben Monate vor der englischen an, und die App hielt
+> die zuerst angelegte für das Original. Deshalb macht der Wertverlauf in der Übersicht am
+> 24.11.2026 einen Sprung. Frühere Tage lassen sich nicht nachträglich korrigieren — die
+> englischen Preise von damals sind nicht gespeichert.
 
 ### Bleiben die Preise aktuell?
 
-Ja. Die App holt sich beim Start die **tagesaktuellen Preise** (rund 150 KB) — eine neue App-Version
-ist dafür nicht nötig. Der Stand steht unter jedem Betrag.
+Ja. Die App holt sich beim Start die **tagesaktuellen Preise** — eine neue App-Version ist dafür
+nicht nötig. Der Stand steht unter jedem Betrag. Die Liste aller Versionen kommt ebenfalls täglich
+neu; taucht bei Cardmarket eine neue Version auf (ein Nachdruck in einem neuen Set), erscheint sie
+in der Auswahl.
 
 Ohne Internet gelten die zuletzt geladenen Preise, und davor die in der App mitgelieferten. Es
 steht also immer ein Preis da, höchstens ein älterer.
 
-Deine manuelle Auswahl bleibt dabei richtig: Gespeichert wird **welche Version** du gewählt hast,
-nicht der Betrag. Die aktualisiert sich also mit.
+Deine Auswahl bleibt dabei richtig: Gespeichert wird **welche Version** du gewählt hast (ihre
+Cardmarket-Nummer), nicht der Betrag und nicht ihr Platz in der Liste.
 
 ---
 

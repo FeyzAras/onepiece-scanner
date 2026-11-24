@@ -172,15 +172,16 @@ class DeckStore {
     }
   }
 
+  /// Mit Zeitlimits - siehe PriceStore.fetchRemote.
   static Future<String?> _get(String url) async {
-    final client = HttpClient();
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
       final request = await client.getUrl(Uri.parse(url));
-      final response = await request.close();
+      final response = await request.close().timeout(const Duration(seconds: 20));
       if (response.statusCode != 200) return null;
-      return await response.transform(utf8.decoder).join();
+      return await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 45));
     } finally {
-      client.close();
+      client.close(force: true);
     }
   }
 }

@@ -1,248 +1,248 @@
 {
-  "generated": "2026-11-23",
+  "generated": "2026-11-24",
   "first": "2026-10-04",
-  "last": "2026-11-23",
-  "days": 43,
+  "last": "2026-11-24",
+  "days": 44,
   "sets": {
     "EB01": {
-      "cards": 89,
-      "bytes": 12619
+      "cards": 112,
+      "bytes": 18371
     },
     "EB02": {
-      "cards": 82,
-      "bytes": 12807
+      "cards": 86,
+      "bytes": 14037
     },
     "EB03": {
-      "cards": 82,
-      "bytes": 12426
+      "cards": 92,
+      "bytes": 15081
     },
     "EB04": {
-      "cards": 84,
-      "bytes": 12159
+      "cards": 88,
+      "bytes": 13385
     },
     "OP01": {
-      "cards": 173,
-      "bytes": 26459
+      "cards": 225,
+      "bytes": 39370
     },
     "OP02": {
-      "cards": 180,
-      "bytes": 25178
+      "cards": 221,
+      "bytes": 35440
     },
     "OP03": {
-      "cards": 176,
-      "bytes": 24085
+      "cards": 229,
+      "bytes": 37134
     },
     "OP04": {
-      "cards": 155,
-      "bytes": 20329
+      "cards": 193,
+      "bytes": 29753
     },
     "OP05": {
-      "cards": 174,
-      "bytes": 22191
+      "cards": 254,
+      "bytes": 41664
     },
     "OP06": {
-      "cards": 177,
-      "bytes": 22369
+      "cards": 258,
+      "bytes": 42061
     },
     "OP07": {
-      "cards": 168,
-      "bytes": 21376
+      "cards": 210,
+      "bytes": 31834
     },
     "OP08": {
-      "cards": 150,
-      "bytes": 18974
+      "cards": 168,
+      "bytes": 23670
     },
     "OP09": {
-      "cards": 185,
-      "bytes": 22994
+      "cards": 248,
+      "bytes": 38472
     },
     "OP10": {
-      "cards": 162,
-      "bytes": 21550
+      "cards": 188,
+      "bytes": 28171
     },
     "OP11": {
-      "cards": 158,
-      "bytes": 20244
+      "cards": 162,
+      "bytes": 21640
     },
     "OP12": {
-      "cards": 168,
-      "bytes": 21389
+      "cards": 177,
+      "bytes": 24014
     },
     "OP13": {
-      "cards": 171,
-      "bytes": 22447
+      "cards": 189,
+      "bytes": 27270
     },
     "OP14": {
-      "cards": 160,
-      "bytes": 21342
+      "cards": 164,
+      "bytes": 22793
     },
     "OP15": {
-      "cards": 149,
-      "bytes": 20225
+      "cards": 150,
+      "bytes": 20906
     },
     "OP16": {
-      "cards": 150,
-      "bytes": 21759
+      "cards": 154,
+      "bytes": 23156
     },
     "OP17": {
-      "cards": 152,
-      "bytes": 22454
+      "cards": 159,
+      "bytes": 24568
     },
     "P": {
-      "cards": 201,
-      "bytes": 37047
+      "cards": 253,
+      "bytes": 50013
     },
     "PRB01": {
       "cards": 2,
-      "bytes": 937
+      "bytes": 958
     },
     "PRB02": {
-      "cards": 36,
-      "bytes": 7037
+      "cards": 38,
+      "bytes": 7678
     },
     "ST01": {
-      "cards": 34,
-      "bytes": 6403
+      "cards": 60,
+      "bytes": 12716
     },
     "ST02": {
-      "cards": 34,
-      "bytes": 5754
+      "cards": 42,
+      "bytes": 7756
     },
     "ST03": {
-      "cards": 29,
-      "bytes": 5159
+      "cards": 43,
+      "bytes": 8573
     },
     "ST04": {
-      "cards": 26,
-      "bytes": 4376
+      "cards": 36,
+      "bytes": 6836
     },
     "ST05": {
       "cards": 34,
-      "bytes": 4940
+      "bytes": 5047
     },
     "ST06": {
-      "cards": 21,
-      "bytes": 3316
+      "cards": 26,
+      "bytes": 4570
     },
     "ST07": {
-      "cards": 22,
-      "bytes": 3404
+      "cards": 25,
+      "bytes": 4194
     },
     "ST08": {
       "cards": 16,
-      "bytes": 2588
+      "bytes": 2643
     },
     "ST09": {
-      "cards": 17,
-      "bytes": 2589
+      "cards": 19,
+      "bytes": 3119
     },
     "ST10": {
-      "cards": 23,
-      "bytes": 4690
+      "cards": 29,
+      "bytes": 6205
     },
     "ST11": {
-      "cards": 6,
-      "bytes": 1445
+      "cards": 9,
+      "bytes": 2181
     },
     "ST12": {
-      "cards": 22,
-      "bytes": 3338
+      "cards": 26,
+      "bytes": 4363
     },
     "ST13": {
-      "cards": 36,
-      "bytes": 6772
+      "cards": 48,
+      "bytes": 9743
     },
     "ST14": {
-      "cards": 23,
-      "bytes": 3828
+      "cards": 29,
+      "bytes": 5319
     },
     "ST15": {
-      "cards": 7,
-      "bytes": 1850
+      "cards": 11,
+      "bytes": 2845
     },
     "ST16": {
-      "cards": 9,
-      "bytes": 2132
+      "cards": 13,
+      "bytes": 3119
     },
     "ST17": {
-      "cards": 9,
-      "bytes": 2327
+      "cards": 14,
+      "bytes": 3558
     },
     "ST18": {
-      "cards": 10,
-      "bytes": 2623
+      "cards": 16,
+      "bytes": 4095
     },
     "ST19": {
-      "cards": 6,
-      "bytes": 1361
+      "cards": 7,
+      "bytes": 1625
     },
     "ST20": {
-      "cards": 6,
-      "bytes": 1320
+      "cards": 7,
+      "bytes": 1585
     },
     "ST21": {
-      "cards": 33,
-      "bytes": 6626
+      "cards": 37,
+      "bytes": 7701
     },
     "ST22": {
       "cards": 31,
-      "bytes": 5824
+      "bytes": 5934
     },
     "ST23": {
       "cards": 6,
-      "bytes": 1396
+      "bytes": 1426
     },
     "ST24": {
       "cards": 6,
-      "bytes": 1380
+      "bytes": 1411
     },
     "ST25": {
       "cards": 5,
-      "bytes": 1213
+      "bytes": 1244
     },
     "ST26": {
       "cards": 6,
-      "bytes": 1566
+      "bytes": 1601
     },
     "ST27": {
       "cards": 6,
-      "bytes": 1480
+      "bytes": 1514
     },
     "ST28": {
       "cards": 5,
-      "bytes": 1313
+      "bytes": 1342
     },
     "ST29": {
       "cards": 31,
-      "bytes": 5468
+      "bytes": 5583
     },
     "ST30": {
       "cards": 34,
-      "bytes": 6759
+      "bytes": 6884
     },
     "ST31": {
       "cards": 6,
-      "bytes": 1611
+      "bytes": 1648
     },
     "ST32": {
       "cards": 6,
-      "bytes": 1599
+      "bytes": 1632
     },
     "ST33": {
       "cards": 5,
-      "bytes": 1351
+      "bytes": 1380
     },
     "ST34": {
       "cards": 5,
-      "bytes": 1320
+      "bytes": 1348
     },
     "ST35": {
       "cards": 5,
-      "bytes": 1275
+      "bytes": 1303
     },
     "ST36": {
       "cards": 5,
-      "bytes": 1345
+      "bytes": 1374
     }
   }
 }

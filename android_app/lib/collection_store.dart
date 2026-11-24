@@ -55,12 +55,16 @@ class CollectionState {
   final String activeFolderId;
   final List<StoredScan> scans;
 
-  /// Vom Nutzer gewaehlte Druckvariante, nach Karten-ID: der Platz in der aufsteigend
-  /// sortierten Liste aller Cardmarket-Versionen dieser Kartennummer.
+  /// Vom Nutzer gewaehlte Cardmarket-Version, nach Karten-ID: die Produktnummer
+  /// (idProduct). Seit v0.13.
   ///
-  /// Bewusst der Platz und nicht der Betrag: Die Preise werden taeglich aktualisiert.
-  /// Ein gespeicherter Betrag wuerde dazu fuehren, dass genau die vom Nutzer korrigierten
-  /// Karten als einzige auf einem alten Preis einfrieren.
+  /// Die Produktnummer bleibt, waehrend sich Preise taeglich aendern - anders als ein
+  /// Betrag (friert ein) oder ein Listenplatz (zeigt auf eine andere Version, sobald sich
+  /// zwei Versionen im Preis ueberholen).
+  final Map<String, int> versionChoice;
+
+  /// Die Wahl bis v0.12: Platz in der aufsteigend sortierten Preisliste. Wird beim
+  /// Start einmalig in [versionChoice] uebersetzt und danach nicht mehr geschrieben.
   final Map<String, int> priceChoice;
 
   /// Aus einer frueheren Fassung uebernommene Betraege. Werden beim ersten Oeffnen in
@@ -91,6 +95,7 @@ class CollectionState {
     required this.folders,
     required this.activeFolderId,
     required this.scans,
+    this.versionChoice = const {},
     this.priceChoice = const {},
     this.legacyPriceAmounts = const {},
     this.unreadableScans = const [],
@@ -151,15 +156,23 @@ class CollectionStore {
         if (entry is Map) unreadable.add(entry.cast<String, dynamic>());
       }
 
+      final version = <String, int>{};
+      final rohVersion = map['versionChoice'];
+      if (rohVersion is Map) {
+        rohVersion.forEach((key, value) {
+          final idProduct = value is num ? value.toInt() : null;
+          if (idProduct != null && idProduct > 0) version['$key'] = idProduct;
+        });
+      }
       final choice = <String, int>{};
       (map['priceChoice'] as Map<String, dynamic>? ?? {}).forEach((key, value) {
         final index = (value as num?)?.toInt();
-        if (index != null && index >= 0) choice[key] = index;
+        if (index != null && index >= 0 && !version.containsKey(key)) choice[key] = index;
       });
       final legacy = <String, double>{};
       (map['prices'] as Map<String, dynamic>? ?? {}).forEach((key, value) {
         final amount = (value as num?)?.toDouble();
-        if (amount != null && !choice.containsKey(key)) legacy[key] = amount;
+        if (amount != null && !choice.containsKey(key) && !version.containsKey(key)) legacy[key] = amount;
       });
 
       // Aeltere Staende kennen keine Wunschliste - dann bleibt sie leer
@@ -183,6 +196,7 @@ class CollectionStore {
         folders: folders.isEmpty ? _defaultFolders() : folders,
         activeFolderId: (map['active'] as String?) ?? defaultFolderId,
         scans: scans,
+        versionChoice: version,
         priceChoice: choice,
         legacyPriceAmounts: legacy,
         unreadableScans: unreadable,
@@ -252,7 +266,9 @@ class CollectionStore {
         'folders': state.folders.map((f) => f.toJson()).toList(),
         'active': state.activeFolderId,
         'scans': state.scans.map((s) => s.toJson()).toList(),
-        'priceChoice': state.priceChoice,
+        if (state.versionChoice.isNotEmpty) 'versionChoice': state.versionChoice,
+        // Nur solange noch nicht uebersetzt (siehe CollectionState.priceChoice)
+        if (state.priceChoice.isNotEmpty) 'priceChoice': state.priceChoice,
         if (state.unreadableScans.isNotEmpty) 'unknown': state.unreadableScans,
         if (state.wishlist.isNotEmpty) 'wishlist': state.wishlist,
         if (state.myDecks.isNotEmpty) 'myDecks': state.myDecks.map((d) => d.toJson()).toList(),

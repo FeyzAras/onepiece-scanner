@@ -601,6 +601,11 @@ class CollectionImport {
   /// tolerante Erkennung aus [CardMatcher.findNumber], die auch OCR-typische
   /// Verwechslungen wie `OPO1-OO1` auffaengt.
   static ({OpCard? card, String? hinweis}) resolve(String roh, CardMatcher matcher) {
+    // Eine exakte Karten-ID zuerst - "OP01-006-ALT2" aus der eigenen CSV waere sonst ueber
+    // die Nummernerkennung zur Normalversion geworden
+    final exakt = matcher.byId(roh.trim());
+    if (exakt != null) return (card: exakt, hinweis: null);
+
     final (ohneAlt, altGewuenscht) = _trenneAlt(roh.trim());
     final norm = _normalisiere(ohneAlt);
 

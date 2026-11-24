@@ -41,17 +41,18 @@ heißen gleich, und Namen anderer Karten stehen im Effekttext — beim Scannen v
 wurden früher reihum „Gina" und „Portgas.D.Ace" erkannt. Die aufgedruckte Nummer (`OP07-055`) ist
 dagegen eindeutig. Dieselbe Nummer muss zweimal gelesen werden, bevor die Karte übernommen wird.
 
-**Richtiges Artwork** — Zu 1.083 Kartennummern gibt es zwei Versionen: normal und Alt-Art, bei
-identischer Nummer und identischem Namen. Welche vor der Kamera liegt, entscheidet ein
-Bild-Fingerabdruck: für alle 2.166 betroffenen Karten vorab berechnet, zur Laufzeit mit dem
-Kamerabild verglichen.
+**Richtiges Artwork** — Zu über 1.000 Kartennummern gibt es mehrere Motive: Normalversion,
+Parallelen, Nachdrucke, bei identischer Nummer und identischem Namen. Der Katalog kennt alle 4.958
+Motive. Ob Normalversion oder Alt-Art vor der Kamera liegt, entscheidet ein Bild-Fingerabdruck,
+vorab berechnet und zur Laufzeit mit dem Kamerabild verglichen; weitere Motive wählt man in den
+Kartendetails per Bild.
 
-**Echte Cardmarket-Preise** — 3.865 von 3.868 Karten (99,9 %) mit Trendpreis, und zwar für die
-**richtige Druckvariante**. Cardmarket führt pro Kartennummer im Schnitt 4,2 Produkte (Originaldruck,
-Alt-Art, Nachdrucke, Promos), deren Preise weit auseinanderliegen — bei OP01-001 zwischen 1,87 € und
-610 €. Die Zuordnung erkennt die Originaledition des Sets und unterscheidet darin normales Artwork
-von Alt-Art. Wie sicher das war, steht in den Kartendetails; dort lässt sich auch jede andere
-Version antippen, falls die Automatik danebenliegt.
+**Echte Cardmarket-Preise** — Trendpreis, täglich aktualisiert, wie bei Scryfall. Cardmarket
+führt pro Kartennummer oft mehrere Versionen (Booster-Druck, Parallele, Nachdrucke, Promos,
+asiatische und japanische Auflage) mit weit auseinanderliegenden Preisen — OP17-040 etwa viermal
+zwischen 0,06 € und 74 €. In den Kartendetails steht **jede Version mit dem Namen ihrer
+Cardmarket-Ausgabe und ihrem Preis**; man tippt die eigene an. Von sich aus wählt die App die
+englische Ausgabe, aus der das Motiv stammt, und sagt, wie sicher das war.
 
 **Sammlung** — Ordner, Dubletten-Zähler (×3), Suche über Name/Nummer/Set, Sortierung nach zuletzt
 gescannt, Name, Set oder Preis. Karten lassen sich im Vollbild vergrößern. Bleibt dauerhaft
@@ -111,8 +112,8 @@ Asset in der App; nachgeladen werden nur die Kartenbilder (und die werden zwisch
 ```bash
 cd android_app
 flutter pub get
-flutter test                        # 267 Tests, laufen ohne Gerät
-npm run test:data                   # 10 Tests der Datenaufbereitung (aus dem Hauptordner)
+flutter test                        # 291 Tests, laufen ohne Gerät
+npm run test:data                   # 23 Tests der Datenaufbereitung (aus dem Hauptordner)
 flutter build apk --release --split-per-abi
 # Ergebnis: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
@@ -153,16 +154,18 @@ oder onepiecetopdecks.com. One Piece und alle Kartenbilder gehören ihren jeweil
 - **Preise sind tagesaktuell, aber nicht in Echtzeit.** Eine GitHub Action holt sie einmal täglich,
   die App lädt sie beim Start. Innerhalb eines Tages ändern sie sich nicht — Cardmarkets
   Trendpreis tut das ohnehin nicht stündlich.
-- **Druckvarianten-Zuordnung beruht auf zwei Annahmen.** Cardmarket liefert keine Editionsnamen,
-  nur Nummern; welche Edition das Originalset ist, wird aus den enthaltenen Kartennummern
-  abgeleitet (die zuerst angelegte „reine" Edition eines Sets). Und wo zwei Produkte in einer
-  Edition stehen, gilt die teurere als Alt-Art — Cardmarket benennt sie nicht unterschiedlich.
-  Rund 80 % der Karten sind dadurch eindeutig oder als Paar zugeordnet, der Rest ist in der App
-  als unsicher gekennzeichnet und manuell korrigierbar.
-- **Keine Länder- oder Sprachfilterung.** Die Export-Dateien enthalten nur europaweite Aggregate
-  (Trend, Durchschnitt, Tiefstpreis). Verkäuferland, Kartensprache und Zustand gibt es bei
-  Cardmarket nur auf Angebotsebene, und dorthin führt nur die API — die ist für neue Anträge
-  geschlossen.
+- **Die automatische Version ist ein Vorschlag.** Innerhalb einer Cardmarket-Ausgabe heißen alle
+  Versionen einer Nummer gleich; welche Normalversion und welche Parallele ist, wird über den Preis
+  abgeleitet (die teurere ist die Parallele). 85 % der Motive sind so eindeutig oder als Paar
+  zugeordnet, der Rest ist als unsicher gekennzeichnet — und jede Version ist mit Namen wählbar.
+  Für einige Turnier- und Sammelmotive findet sich keine passende Version; dort wählt man selbst.
+- **Bis Version 0.12 waren die Preise von OP05 bis OP16 und EB01 bis EB03 japanisch bzw.
+  asiatisch** (Cardmarket legt diese Ausgaben zuerst an). Seit 0.13.0 englisch; der Preisverlauf
+  vor dem 24.11.2026 lässt sich nicht nachträglich korrigieren.
+- **Kein Länderfilter.** Die Export-Dateien enthalten europaweite Aggregate (Trend, Durchschnitt,
+  Tiefstpreis). Japanische und asiatische Auflagen führt Cardmarket als eigene Ausgaben — die sind
+  wählbar. Verkäuferland und Zustand gibt es nur auf Angebotsebene, und dorthin führt nur die API,
+  die für neue Anträge geschlossen ist.
 - **Deckprüfung ohne Sperrliste.** Verbotene oder begrenzte Karten stehen nicht in den Daten;
   vor einem Turnier die offizielle Liste ansehen.
 - **Artwork-Erkennung unter Kamerabedingungen ungetestet** — die Logik ist an 150 echten

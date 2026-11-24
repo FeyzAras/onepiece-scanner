@@ -112,4 +112,18 @@ class Chip2 extends StatelessWidget {
   }
 }
 
-String formatEuro(double value) => '${value.toStringAsFixed(2)} €';
+/// Euro im deutschen Format: "0,17 €", "1.234,56 €".
+///
+/// Frueher "1234.56 €" mit Dezimalpunkt - in einer deutschen App falsch, und ab vierstelligen
+/// Sammlungswerten schwer zu lesen.
+String formatEuro(double value) {
+  final cent = (value.abs() * 100).round();
+  final ziffern = (cent ~/ 100).toString();
+  final euro = StringBuffer();
+  for (var i = 0; i < ziffern.length; i++) {
+    if (i > 0 && (ziffern.length - i) % 3 == 0) euro.write('.');
+    euro.write(ziffern[i]);
+  }
+  final rest = (cent % 100).toString().padLeft(2, '0');
+  return '${value < 0 && cent > 0 ? '−' : ''}$euro,$rest €';
+}

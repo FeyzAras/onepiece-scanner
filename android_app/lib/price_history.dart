@@ -150,15 +150,18 @@ class HistoryStore {
 
   /// Verlauf eines Sets. Ohne Netz gilt der zuletzt gespeicherte Stand, auch wenn er
   /// alt ist - ein alter Verlauf ist besser als keiner. Null nur, wenn es nie einen gab.
-  Future<SetHistory?> laden(String setCode, {DateTime? jetzt}) async {
+  ///
+  /// [erzwingen]: nicht auf eine frische Datei vertrauen, sondern neu holen - fuer
+  /// "nach unten ziehen zum Aktualisieren". Vorher holte das innerhalb von 6 Stunden nichts.
+  Future<SetHistory?> laden(String setCode, {DateTime? jetzt, bool erzwingen = false}) async {
     final schonDa = _imSpeicher[setCode];
-    if (schonDa != null) return schonDa;
+    if (schonDa != null && !erzwingen) return schonDa;
 
     final ordner = await _ordner();
     final datei = File('${ordner.path}${Platform.pathSeparator}$setCode.json');
     final zeit = jetzt ?? DateTime.now();
 
-    if (await datei.exists() && zeit.difference(await datei.lastModified()) < frischDauer) {
+    if (!erzwingen && await datei.exists() && zeit.difference(await datei.lastModified()) < frischDauer) {
       final h = SetHistory.parse(await datei.readAsString());
       if (h != null) return _imSpeicher[setCode] = h;
     }
@@ -185,21 +188,18 @@ class HistoryStore {
   }
 
   /// Mehrere Sets, hoechstens vier gleichzeitig.
-  Future<Map<String, SetHistory>> ladenMehrere(Iterable<String> codes) async {
+  Future<Map<String, SetHistory>> ladenMehrere(Iterable<String> codes, {bool erzwingen = false}) async {
     final ergebnis = <String, SetHistory>{};
     final liste = codes.toSet().toList();
     for (var i = 0; i < liste.length; i += 4) {
       final runde = liste.skip(i).take(4);
       await Future.wait(runde.map((code) async {
-        final h = await laden(code);
+        final h = await laden(code, erzwingen: erzwingen);
         if (h != null) ergebnis[code] = h;
       }));
     }
     return ergebnis;
   }
-
-  /// Fuer den Fall, dass die Daten neu geholt werden sollen (z.B. "Aktualisieren").
-  void speicherLeeren() => _imSpeicher.clear();
 
   static Future<String?> _holen(String url) async {
     final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);

@@ -11,6 +11,11 @@ const BASE = "https://downloads.s3.cardmarket.com/productCatalog";
 const TARGETS = [
   { url: `${BASE}/productList/products_singles_${GAME_ID}.json`, file: `cm_products_${GAME_ID}.json` },
   { url: `${BASE}/priceGuide/price_guide_${GAME_ID}.json`, file: `cm_prices_${GAME_ID}.json` },
+  // Versiegelte Produkte (Booster, Displays, Decks). Gebraucht nur fuer ihre Namen: Die
+  // Einzelkarten-Liste nennt eine Ausgabe bloss als Nummer (idExpansion). Ueber die
+  // versiegelten Produkte derselben Ausgabe bekommt sie einen Namen - etwa 6723 =
+  // "The World's Strongest Warriors (Asia Region Legal)".
+  { url: `${BASE}/productList/products_nonsingles_${GAME_ID}.json`, file: `cm_nonsingles_${GAME_ID}.json` },
 ];
 
 async function download({ url, file }) {

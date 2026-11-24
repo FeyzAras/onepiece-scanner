@@ -3,6 +3,7 @@
 //                              -> android_app/assets/cards.json (Android-App)
 //   docs/data/decks.json       -> android_app/assets/decks.json
 //   data/sets.json             -> android_app/assets/sets.json  (Set-Namen fuer die Uebersicht)
+//   docs/data/versions.json    -> android_app/assets/versions.json (Cardmarket-Versionen, Rueckfall ohne Netz)
 //
 // Immer nach einer Datenaenderung ausfuehren, sonst arbeiten die Apps mit altem Stand.
 
@@ -16,6 +17,7 @@ const copies = [
   { from: "data/cards.normalized.json", to: "android_app/assets/cards.json" },
   { from: "docs/data/decks.json", to: "android_app/assets/decks.json" },
   { from: "data/sets.json", to: "android_app/assets/sets.json" },
+  { from: "docs/data/versions.json", to: "android_app/assets/versions.json" },
 ];
 
 for (const { from, to } of copies) {

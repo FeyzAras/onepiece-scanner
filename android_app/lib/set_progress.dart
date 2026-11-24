@@ -55,7 +55,8 @@ class SetFortschritt {
   final int grundBesessen;
 
   /// Alt-Arts werden getrennt gezaehlt - wie bei Sammlern ueblich. Sie machen ein Set
-  /// nicht "unvollstaendig", sind aber eine eigene Jagd.
+  /// nicht "unvollstaendig", sind aber eine eigene Jagd. Gezaehlt werden nur Parallelen
+  /// aus dem eigenen Produkt des Sets, siehe [SetProgress.gehoertZumSet].
   final int altGesamt;
   final int altBesessen;
 
@@ -88,6 +89,19 @@ class SetFortschritt {
 }
 
 class SetProgress {
+  /// Zaehlt ein Motiv zu seinem Set?
+  ///
+  /// Die Normalversion immer. Weitere Motive nur, wenn sie aus dem eigenen Produkt des Sets
+  /// stammen: Die Parallele aus dem OP01-Booster gehoert zu OP01, der Nachdruck derselben
+  /// Nummer aus "The Best" (PRB-01) nicht - sonst waeren OP01 bis OP10 durch 317 PRB-Motive
+  /// scheinbar nie vollstaendig. Motive ohne Produktangabe (aeltere Kataloge) zaehlen mit,
+  /// wie bisher.
+  static bool gehoertZumSet(OpCard karte) {
+    if (!karte.alt) return true;
+    if (karte.produkt == null && karte.produktSets.isEmpty) return true;
+    return karte.produktSets.contains(karte.setCode);
+  }
+
   /// Berechnet den Fortschritt je Set.
   ///
   /// [besessen] enthaelt die Karten-IDs der Sammlung - Dubletten zaehlen einmal.
@@ -104,7 +118,7 @@ class SetProgress {
   }) {
     final proSet = <String, List<OpCard>>{};
     for (final karte in katalog) {
-      if (karte.jpOnly) continue;
+      if (karte.jpOnly || !gehoertZumSet(karte)) continue;
       proSet.putIfAbsent(karte.setCode, () => []).add(karte);
     }
 

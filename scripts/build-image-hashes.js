@@ -58,13 +58,20 @@ async function main() {
   fs.mkdirSync(CACHE, { recursive: true });
   const cards = JSON.parse(fs.readFileSync(CARDS, "utf8").replace(/^﻿/, ""));
 
-  // Nur Karten, deren Nummer mehrdeutig ist - nur dort hilft der Bildvergleich.
+  // Nur Normalversion und erste Alt-Art (-ALT). Seit v0.13 kennt der Katalog alle Motive
+  // (-ALT2, -ALT3 ...), viele davon sehen einander sehr aehnlich (Nachdrucke, Varianten
+  // derselben Parallele). Bekaemen sie Fingerabdruecke, entschiede der Scanner zwischen
+  // mehr und aehnlicheren Kandidaten - die Treffsicherheit aendert sich dann ungeprueft.
+  // Erst mit einer Messung an echten Kamerabildern erweitern; die weiteren Motive waehlt
+  // der Nutzer bis dahin in den Kartendetails.
+  const fuerScanner = (c) => c.id === c.baseId || c.id === `${c.baseId}-ALT`;
   const byBase = new Map();
-  for (const c of cards) {
+  for (const c of cards.filter(fuerScanner)) {
     if (!byBase.has(c.baseId)) byBase.set(c.baseId, []);
     byBase.get(c.baseId).push(c);
   }
-  const targets = cards.filter((c) => c.img && byBase.get(c.baseId).length > 1);
+  // Nur Karten, deren Nummer mehrdeutig ist - nur dort hilft der Bildvergleich.
+  const targets = cards.filter((c) => c.img && fuerScanner(c) && byBase.get(c.baseId).length > 1);
   console.log(`${targets.length} Karten mit mehrdeutiger Nummer - Fingerabdruecke werden berechnet`);
 
   let done = 0;

@@ -48,6 +48,24 @@ function main() {
   const kb = Math.round(fs.statSync(OUT).size / 1024);
   console.log(`OK: ${Object.keys(prices).length} Preise, ${Object.keys(options).length} Versionslisten`);
   console.log(`    Stand ${asOf} -> ${OUT} (${kb} KB)`);
+
+  // Alle Cardmarket-Versionen mit Ausgabe - eine eigene Datei, nicht in prices.json:
+  // App-Versionen bis 0.12 lesen prices.json streng und verloeren bei einem neuen Format
+  // alle Tagespreise. Ausserdem braucht die App diese Liste erst, wenn jemand eine
+  // Version waehlt.
+  const versionenQuelle = path.join(root, "data", "versions.json");
+  if (fs.existsSync(versionenQuelle)) {
+    const ziel = path.join(root, "docs", "data", "versions.json");
+    const inhalt = fs.readFileSync(versionenQuelle, "utf8");
+    const geprueft = JSON.parse(inhalt);
+    if (!geprueft.versionen || Object.keys(geprueft.versionen).length < 1000) {
+      throw new Error("versions.json ist unvollstaendig - nicht veroeffentlicht");
+    }
+    fs.writeFileSync(ziel, inhalt, "utf8");
+    console.log(`OK: ${Object.keys(geprueft.versionen).length} Nummern mit Versionen -> ${ziel} (${Math.round(inhalt.length / 1024)} KB)`);
+  } else {
+    console.warn("Hinweis: data/versions.json fehlt - erst import-cardmarket-prices.js ausfuehren.");
+  }
 }
 
 main();

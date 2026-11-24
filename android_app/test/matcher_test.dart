@@ -149,8 +149,14 @@ Supernovas/Straw Hat Crew oo01.001 um''';
     });
 
     test('fast alle Karten haben einen Preis', () {
+      // Normalversionen praktisch alle. Seit v0.13 kennt der Katalog jedes Motiv - auch
+      // Turnier- und Sammelmotive, zu denen Cardmarket keine erkennbare Version fuehrt.
+      // Die bleiben ohne geratenen Preis; der Nutzer waehlt dort die Version selbst.
+      final normal = matcher.cards.where((c) => !c.alt && !c.jpOnly).toList();
+      final normalMitPreis = normal.where((c) => c.price != null).length;
+      expect(normalMitPreis / normal.length, greaterThan(0.97));
       final withPrice = matcher.cards.where((c) => c.price != null).length;
-      expect(withPrice / matcher.cards.length, greaterThan(0.95));
+      expect(withPrice / matcher.cards.length, greaterThan(0.9));
     });
   });
 
@@ -183,7 +189,7 @@ Supernovas/Straw Hat Crew oo01.001 um''';
 
     test('der zugeordnete Preis steht immer in der Optionsliste', () {
       var checked = 0;
-      for (final card in matcher.cards.where((c) => c.hasPriceChoice).take(400)) {
+      for (final card in matcher.cards.where((c) => c.hasPriceChoice && c.price != null).take(400)) {
         expect(card.priceOptions.any((o) => (o - card.price!.amount).abs() < 0.005), isTrue,
             reason: '${card.id}: ${card.price!.amount} fehlt in ${card.priceOptions}');
         checked++;

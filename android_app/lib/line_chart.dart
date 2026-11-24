@@ -279,8 +279,11 @@ class _Geometrie {
   }
 
   /// Achsenbeschriftung: ganze Euro ab einem Schritt von 1, darunter mit Cent.
-  static String achsenText(double wert, double schritt) =>
-      schritt >= 1 ? '${wert.round()} €' : '${wert.toStringAsFixed(2)} €';
+  static String achsenText(double wert, double schritt) {
+    if (schritt < 1) return formatEuro(wert);
+    final voll = formatEuro(wert.roundToDouble());
+    return '${voll.substring(0, voll.length - 5)} €'; // ",00" weg
+  }
 }
 
 class _LinienMaler extends CustomPainter {

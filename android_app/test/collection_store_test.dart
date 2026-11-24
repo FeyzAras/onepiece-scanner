@@ -141,6 +141,37 @@ void main() {
       expect(state.scans.length, 3);
       expect(state.priceChoice['OP01-001'], 2);
     });
+
+    test('Versionswahl (Produktnummer) wird gespeichert und hat Vorrang vor der alten', () async {
+      SharedPreferences.setMockInitialValues({});
+      await CollectionStore.save(CollectionState(
+        folders: const [ScanFolder(id: 'default', name: 'Meine Sammlung')],
+        activeFolderId: 'default',
+        scans: [scan('OP17-040')],
+        versionChoice: const {'OP17-040': 904855},
+      ));
+      final roh = jsonDecode(CollectionStore.encode((await CollectionStore.load())));
+      expect(roh['versionChoice'], {'OP17-040': 904855});
+      expect(roh.containsKey('priceChoice'), isFalse, reason: 'das alte Format wird nicht mehr geschrieben');
+
+      // Beide vorhanden (Zwischenstand): die neue Wahl gilt, die alte faellt weg
+      final beide = CollectionStore.parse(jsonEncode({
+        'scans': [
+          {'id': 'OP17-040'},
+        ],
+        'versionChoice': {'OP17-040': 904855},
+        'priceChoice': {'OP17-040': 2, 'OP01-001': 1},
+      }))!;
+      expect(beide.versionChoice, {'OP17-040': 904855});
+      expect(beide.priceChoice, {'OP01-001': 1});
+
+      // Unsinn wird ignoriert
+      final kaputt = CollectionStore.parse(jsonEncode({
+        'scans': [],
+        'versionChoice': {'A': 'x', 'B': -5, 'C': 12},
+      }))!;
+      expect(kaputt.versionChoice, {'C': 12});
+    });
   });
 
   group('Sicherung und Wiederherstellung', () {

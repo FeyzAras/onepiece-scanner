@@ -127,6 +127,21 @@ void main() {
       expect(aufgeloest('OP01-001')?.alt, isFalse);
     });
 
+    test('exakte Karten-ID weiterer Motive (seit v0.13: -ALT2, -ALT3 ...)', () {
+      final mitMotiven = CardMatcher([
+        karte('OP01-006'),
+        karte('OP01-006-ALT', alt: true),
+        const OpCard(
+            id: 'OP01-006-ALT2', baseId: 'OP01-006', alt: true, name: 'Otama', rarity: 'UC', cardType: 'CHARACTER', effect: ''),
+      ]);
+      // Frueher machte die Nummernerkennung daraus die Normalversion
+      expect(CollectionImport.resolve('OP01-006-ALT2', mitMotiven).card?.id, 'OP01-006-ALT2');
+      expect(CollectionImport.resolve('op01-006-alt2', mitMotiven).card?.id, 'OP01-006-ALT2');
+      expect(CollectionImport.resolve('OP01-006-ALT2', mitMotiven).hinweis, isNull);
+      expect(CollectionImport.resolve('OP01-006-ALT', mitMotiven).card?.id, 'OP01-006-ALT');
+      expect(CollectionImport.resolve('OP1-6', mitMotiven).card?.id, 'OP01-006');
+    });
+
     test('OCR-Verwechslung von O und Null im Praefix', () {
       final treffer = CollectionImport.resolve('OPO1-001', matcher);
       expect(treffer.card?.id, 'OP01-001');

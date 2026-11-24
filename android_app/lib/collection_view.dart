@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'card_model.dart';
+import 'card_versions.dart';
 import 'collection_export.dart';
 import 'collection_store.dart';
 import 'line_chart.dart';
@@ -52,7 +53,12 @@ class CollectionView extends StatefulWidget {
   final List<CollectionEntry> entries;
   final List<ScanFolder> folders;
   final void Function(OpCard card, String folderId) onRemoveOne;
-  final void Function(CollectionEntry entry, OpCard replacement) onSwitchArtwork;
+
+  /// Stellt Exemplare auf ein anderes Motiv um. [wahlZuruecksetzen]: die gewaehlte Version
+  /// ist die automatische des Ziels, eine fruehere eigene Wahl dort entfaellt.
+  final void Function(List<CollectionEntry> entries, OpCard replacement, {bool wahlZuruecksetzen}) onSwitchArtwork;
+
+  /// Alle Motive derselben Kartennummer (Normalversion, Parallelen, Nachdrucke).
   final List<OpCard> Function(OpCard card) variantsOf;
   final VoidCallback onManageFolders;
 
@@ -68,14 +74,14 @@ class CollectionView extends StatefulWidget {
   /// Geltender Einzelpreis einer Karte (automatisch zugeordnet oder vom Nutzer gewaehlt).
   final double Function(OpCard card) priceOf;
 
-  /// Alle Cardmarket-Versionen dieser Kartennummer, aufsteigend.
-  final List<double> Function(OpCard card) optionsFor;
+  /// Alle Cardmarket-Versionen dieser Kartennummer, guenstigste zuerst.
+  final List<KartenVersion> Function(OpCard card) versionenVon;
 
-  /// Welche Version der Nutzer gewaehlt hat (Platz in der Liste), oder null.
-  final int? Function(OpCard card) choiceOf;
+  /// Welche Version der Nutzer fuer diese Karte gewaehlt hat (Produktnummer), oder null.
+  final int? Function(OpCard card) wahlVon;
 
-  /// Waehlt eine Version, oder setzt bei null auf die automatische Zuordnung zurueck.
-  final void Function(OpCard card, int? optionIndex) onChoosePrice;
+  /// Merkt sich eine Version, oder setzt bei null auf die automatische zurueck.
+  final void Function(OpCard card, KartenVersion? version) onWaehleVersion;
 
   /// Stand der geltenden Preisdaten.
   final String priceAsOf;
@@ -104,9 +110,9 @@ class CollectionView extends StatefulWidget {
     this.onCheckUpdate,
     this.appVersion = '',
     required this.priceOf,
-    required this.optionsFor,
-    required this.choiceOf,
-    required this.onChoosePrice,
+    required this.versionenVon,
+    required this.wahlVon,
+    required this.onWaehleVersion,
     required this.priceAsOf,
   });
 
@@ -208,7 +214,7 @@ class _CollectionViewState extends State<CollectionView> {
       await CollectionExport.share(
         entries: widget.entries,
         priceOf: widget.priceOf,
-        choiceOf: widget.choiceOf,
+        choiceOf: widget.wahlVon,
         folderName: (id) =>
             widget.folders.firstWhere((f) => f.id == id, orElse: () => const ScanFolder(id: '', name: '—')).name,
         priceAsOf: widget.priceAsOf,
@@ -470,11 +476,12 @@ class _CollectionViewState extends State<CollectionView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                stack.card.price == null ? '–' : formatEuro(stack.totalValue),
+                stack.unitPrice > 0 ? formatEuro(stack.totalValue) : '–',
                 style: const TextStyle(fontSize: 11, color: kGold, fontWeight: FontWeight.bold),
               ),
-              // Hinweiszeichen, wenn die Zuordnung zur Druckvariante unsicher ist
-              if (stack.card.price?.confidence == PriceConfidence.unsicher)
+              // Hinweiszeichen, wenn die Zuordnung zur Druckvariante unsicher ist - es sei
+              // denn, der Nutzer hat die Version selbst gewaehlt
+              if (stack.card.price?.confidence == PriceConfidence.unsicher && widget.wahlVon(stack.card) == null)
                 const Padding(
                   padding: EdgeInsets.only(left: 3),
                   child: Icon(Icons.help_outline, size: 11, color: kDim),
@@ -486,52 +493,156 @@ class _CollectionViewState extends State<CollectionView> {
     );
   }
 
-  /// Erklaert, worauf sich der Preis bezieht, zeigt die Spanne aller Cardmarket-Versionen
-  /// dieser Kartennummer und laesst eine andere waehlen.
-  ///
-  /// Hintergrund: Cardmarket fuehrt pro Nummer mehrere Druckvarianten - bei OP01-001 acht,
-  /// von 1,87 EUR bis 610 EUR. Die automatische Zuordnung kann danebenliegen, deshalb
-  /// bleibt die Entscheidung einsehbar und korrigierbar.
-  Widget _priceSection(BuildContext ctx, StackedCard stack) {
-    final card = stack.card;
-    final price = card.price!;
-    final options = widget.optionsFor(card);
-    final chosenIndex = widget.choiceOf(card);
-    final chosenByUser = chosenIndex != null;
+  // ------------------------------------------------------------ Motive und Versionen
 
-    final confidenceColor = switch (price.confidence) {
-      PriceConfidence.eindeutig => kOk,
-      PriceConfidence.paar => kGold,
-      PriceConfidence.unsicher => const Color(0xFFFF8A8A),
-    };
+  /// Alle Motive dieser Nummer als Bilder - Normalversion, Parallelen, Nachdrucke, jeweils
+  /// mit dem Produkt, aus dem sie stammen. Antippen stellt das Exemplar um.
+  Widget _motivAbschnitt(BuildContext ctx, StackedCard stack) {
+    final motive = [...widget.variantsOf(stack.card)]..sort((a, b) => a.motivIndex.compareTo(b.motivIndex));
+    if (motive.length < 2) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Motiv · ${motive.length} Versionen dieser Nummer',
+              style: const TextStyle(fontSize: 12, color: kDim, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 2),
+          const Text('Tippe auf das Bild, das deine Karte zeigt. Lange drücken vergrößert.',
+              style: TextStyle(fontSize: 10.5, color: kDim)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 154,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: motive.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => _motivKachel(ctx, stack, motive[i]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _motivKachel(BuildContext ctx, StackedCard stack, OpCard motiv) {
+    final aktuell = motiv.id == stack.card.id;
+    return GestureDetector(
+      onTap: aktuell ? null : () => _motivWaehlen(ctx, stack, motiv),
+      onLongPress: () => FullScreenCard.show(ctx, motiv),
+      child: SizedBox(
+        width: 70,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                border: Border.all(color: aktuell ? kGold : Colors.transparent, width: 2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: CardImage(card: motiv, width: 62, radius: BorderRadius.circular(5)),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              aktuell ? '✓ ${motiv.motivName}' : motiv.motivName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, color: aktuell ? kGold : Colors.white),
+            ),
+            Text(
+              motiv.produkt ?? motiv.rarity,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 9, color: kDim, height: 1.2),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Stellt Exemplare auf ein anderes Motiv um. Bei mehreren Exemplaren wird gefragt -
+  /// wer drei Karten hat, hat vielleicht nur eine davon als Parallele.
+  Future<void> _motivWaehlen(BuildContext ctx, StackedCard stack, OpCard ziel, {bool wahlZuruecksetzen = false}) async {
+    var eintraege = [stack.entries.first];
+    if (stack.count > 1) {
+      final alle = await showDialog<bool>(
+        context: ctx,
+        builder: (d) => AlertDialog(
+          backgroundColor: kSurface,
+          title: const Text('Welche Exemplare?'),
+          content: Text('Du hast ${stack.count} Exemplare von ${stack.card.name}. '
+              'Sollen alle das Motiv „${ziel.motivName}" bekommen oder nur eins?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d), child: const Text('Abbrechen')),
+            TextButton(onPressed: () => Navigator.pop(d, false), child: const Text('Nur eins')),
+            FilledButton(onPressed: () => Navigator.pop(d, true), child: Text('Alle ${stack.count}')),
+          ],
+        ),
+      );
+      if (alle == null) return;
+      if (alle) eintraege = stack.entries;
+    }
+    if (!ctx.mounted) return;
+    Navigator.pop(ctx);
+    widget.onSwitchArtwork(eintraege, ziel, wahlZuruecksetzen: wahlZuruecksetzen);
+  }
+
+  /// Alle Cardmarket-Versionen dieser Nummer, nach Ausgabe gruppiert, zum Auswaehlen.
+  ///
+  /// Cardmarket fuehrt pro Nummer oft mehrere Versionen - bei OP17-040 den Booster-Druck,
+  /// die Parallele, die Asien-Auflage und einen Nachdruck in OP-18, zwischen 0,06 und
+  /// 74 EUR. Welche jemand hat, weiss nur er selbst. Deshalb steht hier alles mit Namen,
+  /// und die automatische Zuordnung ist nur der Vorschlag.
+  Widget _versionenAbschnitt(BuildContext ctx, StackedCard stack) {
+    final card = stack.card;
+    final versionen = widget.versionenVon(card);
+    final standard = versionen.where((v) => v.istStandardFuer(card)).firstOrNull;
+    if (versionen.isEmpty || (versionen.length == 1 && standard != null)) return const SizedBox.shrink();
+
+    final wahlId = widget.wahlVon(card);
+    final gewaehlt = wahlId == null ? null : versionen.where((v) => v.idProduct == wahlId).firstOrNull;
+    final aktiv = gewaehlt ?? standard;
+    final motive = {for (final m in widget.variantsOf(card)) m.motivIndex: m};
+
+    const rot = Color(0xFFFF8A8A);
+    final (IconData icon, Color farbe, String status) = gewaehlt != null
+        ? (Icons.check_circle_outline, kOk, 'von dir gewählt')
+        : standard == null
+            ? (Icons.help_outline, rot, 'keine Version zugeordnet – bitte wählen')
+            : switch (card.price?.confidence) {
+                PriceConfidence.eindeutig => (Icons.verified_outlined, kOk, 'automatisch, eindeutig zugeordnet'),
+                PriceConfidence.paar => (Icons.help_outline, kGold, 'automatisch, Normal und Parallele unterschieden'),
+                _ => (Icons.help_outline, rot, 'automatisch, Zuordnung unsicher'),
+              };
 
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(color: kRow, borderRadius: BorderRadius.circular(12)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text('Welche Version hast du?', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
+            Text(
+              'Cardmarket führt ${versionen.length} Versionen dieser Nummer. '
+              'Tippe auf deine – der Preis richtet sich danach.',
+              style: const TextStyle(fontSize: 11, color: kDim, height: 1.35),
+            ),
+            const SizedBox(height: 6),
             Row(
               children: [
-                Icon(
-                  price.confidence == PriceConfidence.eindeutig ? Icons.verified_outlined : Icons.help_outline,
-                  size: 15,
-                  color: confidenceColor,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    chosenByUser ? 'von dir ausgewählt' : price.confidence.label,
-                    style: TextStyle(fontSize: 12, color: chosenByUser ? kOk : confidenceColor),
-                  ),
-                ),
-                if (chosenByUser)
+                Icon(icon, size: 14, color: farbe),
+                const SizedBox(width: 5),
+                Expanded(child: Text(status, style: TextStyle(fontSize: 11.5, color: farbe))),
+                if (gewaehlt != null)
                   TextButton(
                     onPressed: () {
                       Navigator.pop(ctx);
-                      widget.onChoosePrice(card, null);
+                      widget.onWaehleVersion(card, null);
                     },
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -542,61 +653,90 @@ class _CollectionViewState extends State<CollectionView> {
                   ),
               ],
             ),
-            if (options.length > 1) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Cardmarket führt ${options.length} Versionen dieser Nummer: '
-                '${formatEuro(options.first)} – ${formatEuro(options.last)}',
-                style: const TextStyle(fontSize: 11.5, color: kDim, height: 1.4),
+            for (final gruppe in nachAusgabe(versionen, card)) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 2),
+                child: Text(gruppe.ausgabe,
+                    style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFFD7DBE0))),
               ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (var i = 0; i < options.length; i++)
-                    Builder(builder: (_) {
-                      final istGewaehlt = (stack.unitPrice - options[i]).abs() < 0.004;
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          widget.onChoosePrice(card, i);
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: istGewaehlt ? kGold : kChip,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            formatEuro(options[i]),
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: istGewaehlt ? const Color(0xFF241A00) : kDim,
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                ],
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Stimmt der Wert nicht, tippe die passende Version an – die Auswahl bleibt gespeichert.',
-                style: TextStyle(fontSize: 10.5, color: kDim, height: 1.4),
-              ),
+              for (final v in gruppe.versionen)
+                _versionZeile(ctx, stack, v,
+                    aktiv: identical(v, aktiv), standard: identical(v, standard), motive: motive),
             ],
+            const SizedBox(height: 6),
+            const Text(
+              'Die Wahl gilt für alle Exemplare dieser Karte. Preise: Cardmarket-Trend. '
+              '„Asia Region Legal" sind englische Karten für Asien, „Non-English" meist japanische.',
+              style: TextStyle(fontSize: 10.5, color: kDim, height: 1.4),
+            ),
           ],
         ),
       ),
     );
   }
 
+  Widget _versionZeile(
+    BuildContext ctx,
+    StackedCard stack,
+    KartenVersion v, {
+    required bool aktiv,
+    required bool standard,
+    required Map<int, OpCard> motive,
+  }) {
+    final verknuepft = v.motive.map((i) => motive[i]).whereType<OpCard>().toList();
+    final motiv = verknuepft.where((m) => m.id == stack.card.id).firstOrNull ?? verknuepft.firstOrNull;
+    final hinweis = [if (motiv != null) motiv.motivName, if (standard) 'automatisch'].join(' · ');
+    return InkWell(
+      onTap: aktiv ? null : () => _versionWaehlen(ctx, stack, v, motive),
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: [
+            Icon(aktiv ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                size: 18, color: aktiv ? kGold : kDim),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 24,
+              child: motiv == null ? null : CardImage(card: motiv, width: 24, radius: BorderRadius.circular(3)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(hinweis, style: TextStyle(fontSize: 11.5, color: aktiv ? Colors.white : kDim)),
+            ),
+            Text(
+              formatEuro(v.preis),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: aktiv ? kGold : Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Version waehlen. Gehoert sie automatisch zu einem anderen Motiv (die 25-EUR-Version
+  /// ist die Parallele), wird das Exemplar auf dieses Motiv umgestellt - Bild und Preis
+  /// passen dann zusammen.
+  Future<void> _versionWaehlen(BuildContext ctx, StackedCard stack, KartenVersion v, Map<int, OpCard> motive) async {
+    final card = stack.card;
+    if (v.istStandardFuer(card)) {
+      Navigator.pop(ctx);
+      if (widget.wahlVon(card) != null) widget.onWaehleVersion(card, null);
+      return;
+    }
+    final anderes = v.motive.map((i) => motive[i]).whereType<OpCard>().where((m) => m.id != card.id).firstOrNull;
+    if (anderes != null) {
+      await _motivWaehlen(ctx, stack, anderes, wahlZuruecksetzen: true);
+      return;
+    }
+    Navigator.pop(ctx);
+    widget.onWaehleVersion(card, v);
+  }
+
   void _showDetails(StackedCard stack) {
     final card = stack.card;
     final price = card.price;
-    final variants = widget.variantsOf(card).where((v) => v.id != card.id).toList();
+    final hatPreis = stack.unitPrice > 0;
 
     showModalBottomSheet(
       context: context,
@@ -664,15 +804,17 @@ class _CollectionViewState extends State<CollectionView> {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        Text(price == null ? 'kein Preis hinterlegt' : formatEuro(stack.unitPrice),
-                            style: const TextStyle(color: kGold, fontWeight: FontWeight.bold, fontSize: 20)),
-                        if (price != null)
+                        Text(hatPreis ? formatEuro(stack.unitPrice) : 'kein Preis',
+                            style: TextStyle(color: hatPreis ? kGold : kDim, fontWeight: FontWeight.bold, fontSize: 20)),
+                        if (hatPreis)
                           Text(
-                            'Cardmarket ${price.basisLabel} · Stand '
-                            '${widget.priceAsOf.isEmpty ? price.asOf : widget.priceAsOf}',
+                            'Cardmarket ${price?.basisLabel ?? 'Trend'} · Stand '
+                            '${widget.priceAsOf.isEmpty ? (price?.asOf ?? '') : widget.priceAsOf}',
                             style: const TextStyle(color: kDim, fontSize: 11),
-                          ),
-                        if (stack.count > 1 && price != null)
+                          )
+                        else
+                          const Text('Wähle unten die Cardmarket-Version.', style: TextStyle(color: kDim, fontSize: 11)),
+                        if (stack.count > 1 && hatPreis)
                           Text('zusammen ${formatEuro(stack.totalValue)}',
                               style: const TextStyle(color: kDim, fontSize: 11.5)),
                       ],
@@ -680,43 +822,17 @@ class _CollectionViewState extends State<CollectionView> {
                   ),
                 ],
               ),
-              if (price != null) _priceSection(ctx, stack),
-              if (price != null && widget.historyStore != null)
+              _motivAbschnitt(ctx, stack),
+              _versionenAbschnitt(ctx, stack),
+              if (widget.historyStore != null)
                 KartenPreisVerlauf(
                   card: card,
                   store: widget.historyStore!,
-                  eigeneWahl: widget.choiceOf(card) != null,
+                  eigeneWahl: widget.wahlVon(card) != null,
                 ),
               if (card.effect.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Text(card.effect, style: const TextStyle(color: Color(0xFFD7DBE0), fontSize: 12, height: 1.45)),
-              ],
-              if (variants.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text('Anderes Artwork mit derselben Nummer',
-                    style: TextStyle(fontSize: 12, color: kDim, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    for (final v in variants)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 10),
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            widget.onSwitchArtwork(stack.entries.first, v);
-                          },
-                          child: Column(
-                            children: [
-                              CardImage(card: v, width: 58),
-                              const SizedBox(height: 4),
-                              const Text('wechseln', style: TextStyle(fontSize: 10, color: kGold)),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
               ],
               const SizedBox(height: 18),
               Row(

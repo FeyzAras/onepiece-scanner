@@ -109,6 +109,37 @@ void main() {
       expect(f.altBesessen, 1);
     });
 
+    test('Alt-Arts zaehlen nur, wenn sie aus dem eigenen Produkt des Sets stammen', () {
+      OpCard motiv(String id, {String? produkt, List<String> sets = const []}) => OpCard(
+            id: id,
+            baseId: id.replaceAll(RegExp(r'-ALT\d*$'), ''),
+            alt: true,
+            name: id,
+            rarity: 'R',
+            cardType: 'CHARACTER',
+            effect: '',
+            produkt: produkt,
+            produktSets: sets,
+          );
+      final eigene = motiv('OP01-006-ALT5', produkt: 'Romance Dawn', sets: ['OP01']);
+      final prb = motiv('OP01-006-ALT', produkt: 'One Piece Card the Best', sets: ['PRB01']);
+      final jubilaeum = motiv('OP01-006-ALT2', produkt: 'Japanese 1st Anniversary Set');
+      final ohneAngabe = motiv('OP01-007-ALT');
+      expect(SetProgress.gehoertZumSet(eigene), isTrue);
+      expect(SetProgress.gehoertZumSet(prb), isFalse, reason: 'PRB-01-Nachdruck gehoert nicht zu OP01');
+      expect(SetProgress.gehoertZumSet(jubilaeum), isFalse);
+      expect(SetProgress.gehoertZumSet(ohneAngabe), isTrue, reason: 'aeltere Kataloge zaehlen wie bisher');
+      expect(SetProgress.gehoertZumSet(karte('OP01-006')), isTrue);
+
+      final f = SetProgress.berechnen(
+        katalog: [karte('OP01-006'), eigene, prb, jubilaeum],
+        besessen: {'OP01-006-ALT', 'OP01-006-ALT5'},
+        preisVon: (_) => 1,
+      ).single;
+      expect(f.altGesamt, 1);
+      expect(f.altBesessen, 1, reason: 'die besessene PRB-Version zaehlt nicht als OP01-Parallele');
+    });
+
     test('nur auf Japanisch erschienene Karten zaehlen nicht zur Gesamtzahl', () {
       final f = SetProgress.berechnen(katalog: katalog, besessen: {}, preisVon: preis)
           .firstWhere((s) => s.code == 'OP01');

@@ -112,6 +112,15 @@ class OpCard {
 
   /// Typen wie "East Blue" oder "Straw Hat Crew".
   final List<String> types;
+
+  /// Aus welchem Produkt dieses Motiv stammt, laut Bandai - etwa "Romance Dawn" oder
+  /// "One Piece Card the Best". Null bei aelteren Katalogen.
+  final String? produkt;
+
+  /// Set-Codes dieses Produkts, z.B. ["OP01"] oder ["OP15", "EB04"]. Leer bei Promo-
+  /// und Sammelprodukten ohne Code.
+  final List<String> produktSets;
+
   final String effect;
   final String? img;
   final CardPrice? price;
@@ -144,6 +153,17 @@ class OpCard {
     return idx > 0 ? baseId.substring(0, idx) : baseId;
   }
 
+  /// Platz dieses Motivs unter allen Motiven der Nummer: 0 Normalversion, 1 die erste
+  /// Alt-Art (-ALT), k die k-te (-ALTk). -1, wenn die ID nicht in das Schema passt.
+  int get motivIndex => motivIndexVon(id, baseId);
+
+  /// Ein Nachdruck (Bandais Bildname endet auf _r1, _r2 ...): gleiches Motiv wie die
+  /// Normalversion, aber aus einem anderen Produkt.
+  bool get istNachdruck => RegExp(r'_r\d+\.\w+$').hasMatch(img ?? '');
+
+  /// Kurzbezeichnung des Motivs fuer die Anzeige.
+  String get motivName => !alt ? 'Normal' : (istNachdruck ? 'Nachdruck' : 'Parallele');
+
   const OpCard({
     required this.id,
     required this.baseId,
@@ -156,6 +176,8 @@ class OpCard {
     this.costLife,
     this.counter,
     this.types = const [],
+    this.produkt,
+    this.produktSets = const [],
     required this.effect,
     this.img,
     this.price,
@@ -176,6 +198,8 @@ class OpCard {
         costLife: (j['costLife'] as num?)?.toInt(),
         counter: (j['counter'] as num?)?.toInt(),
         types: (j['types'] as List?)?.map((e) => '$e').toList() ?? const [],
+        produkt: j['produkt'] is String ? j['produkt'] as String : null,
+        produktSets: (j['produktSets'] as List?)?.map((e) => '$e').toList() ?? const [],
         effect: (j['effect'] ?? '') as String,
         img: j['img'] as String?,
         price: CardPrice.fromJson(j['price'] as Map<String, dynamic>?),
@@ -196,3 +220,22 @@ class OpCard {
     return einzeln is String && einzeln.isNotEmpty ? [einzeln] : const [];
   }
 }
+
+/// Platz eines Motivs: Nummer -> 0, Nummer-ALT -> 1, Nummer-ALTk -> k; -1 sonst.
+int motivIndexVon(String id, String baseId) {
+  final i = id.toUpperCase();
+  final b = baseId.toUpperCase();
+  if (i == b) return 0;
+  if (!i.startsWith(b)) return -1;
+  final m = RegExp(r'^-ALT(\d*)$').firstMatch(i.substring(b.length));
+  if (m == null) return -1;
+  final zahl = m.group(1)!;
+  return zahl.isEmpty ? 1 : int.parse(zahl);
+}
+
+/// Umkehrung von [motivIndexVon]: 0 -> Nummer, 1 -> Nummer-ALT, k -> Nummer-ALTk.
+String motivIdVon(String baseId, int index) => switch (index) {
+      0 => baseId,
+      1 => '$baseId-ALT',
+      _ => '$baseId-ALT$index',
+    };

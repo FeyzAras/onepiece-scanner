@@ -66,13 +66,16 @@ class PriceStore {
 
   /// Holt den aktuellen Stand. Gibt null zurueck, wenn das nicht klappt - dann bleibt
   /// der vorhandene Stand bestehen.
+  ///
+  /// Mit Zeitlimits: Ohne sie haelt eine haengende Verbindung (WLAN mit Anmeldeseite) die
+  /// ganze Startkette auf - Decklisten und Update-Pruefung warten dahinter.
   static Future<LivePrices?> fetchRemote() async {
-    final client = HttpClient();
+    final client = HttpClient()..connectionTimeout = const Duration(seconds: 15);
     try {
       final request = await client.getUrl(Uri.parse(_remoteUrl));
-      final response = await request.close();
+      final response = await request.close().timeout(const Duration(seconds: 20));
       if (response.statusCode != 200) return null;
-      final raw = await response.transform(utf8.decoder).join();
+      final raw = await response.transform(utf8.decoder).join().timeout(const Duration(seconds: 30));
       final parsed = LivePrices.parse(raw);
       if (parsed == null) return null;
       final prefs = await SharedPreferences.getInstance();
@@ -81,7 +84,7 @@ class PriceStore {
     } catch (_) {
       return null;
     } finally {
-      client.close();
+      client.close(force: true);
     }
   }
 }

@@ -28,12 +28,17 @@ class ScannerView extends StatefulWidget {
   final void Function(MatchResult result) onScanned;
   final VoidCallback onPickFolder;
 
+  /// true, solange der Reiter sichtbar ist. Sonst ist die Kamera aus: kein Akkuverbrauch,
+  /// und vor allem keine Karten, die unbemerkt im Hintergrund aufgenommen werden.
+  final bool aktiv;
+
   const ScannerView({
     super.key,
     required this.matcher,
     required this.activeFolderName,
     required this.onScanned,
     required this.onPickFolder,
+    this.aktiv = true,
   });
 
   @override
@@ -70,14 +75,30 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
   String _artworkInfo = '-';
   String? _lastError;
 
+  /// Ein Kamerastart laeuft gerade - verhindert doppelte Starts beim schnellen Wechseln.
+  bool _kameraStartet = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _initCamera();
+    if (widget.aktiv) _initCamera();
+  }
+
+  @override
+  void didUpdateWidget(covariant ScannerView alt) {
+    super.didUpdateWidget(alt);
+    if (alt.aktiv == widget.aktiv) return;
+    if (widget.aktiv) {
+      _initCamera();
+    } else {
+      _kameraFreigeben();
+    }
   }
 
   Future<void> _initCamera() async {
+    if (_kameraStartet || _controller != null) return;
+    _kameraStartet = true;
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) throw Exception('Keine Kamera gefunden');
@@ -92,7 +113,8 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
         imageFormatGroup: ImageFormatGroup.nv21,
       );
       await controller.initialize();
-      if (!mounted) {
+      // Inzwischen weggewechselt? Dann gar nicht erst laufen lassen.
+      if (!mounted || !widget.aktiv) {
         await controller.dispose();
         return;
       }
@@ -103,12 +125,25 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
       });
     } catch (e) {
       if (mounted) setState(() => _fatalError = e.toString());
+    } finally {
+      _kameraStartet = false;
     }
+  }
+
+  /// Kamera aus und freigeben. Eine angefangene Bestaetigung verfaellt - sonst zaehlte
+  /// ein Bild von vor dem Wechsel mit einem von danach zusammen.
+  void _kameraFreigeben() {
+    final controller = _controller;
+    _controller = null;
+    _pendingId = null;
+    _pendingCount = 0;
+    controller?.dispose();
+    if (mounted) setState(() {});
   }
 
   void _onFrame(CameraImage image) {
     _framesSeen++;
-    if (!_scanning || _busy || widget.matcher == null) return;
+    if (!widget.aktiv || !_scanning || _busy || widget.matcher == null) return;
     final now = DateTime.now();
     if (now.difference(_lastFrame) < kFrameInterval) return;
     _lastFrame = now;
@@ -171,6 +206,8 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
   }
 
   void _handleCandidate(MatchResult result) {
+    // Eine Erkennung, die vor dem Reiterwechsel begann, kann danach noch fertig werden
+    if (!widget.aktiv) return;
     final now = DateTime.now();
     final id = result.card.id;
     if (id == _lastAddedId && now.difference(_lastAdd) < kSameCardCooldown) return;
@@ -285,11 +322,9 @@ class _ScannerViewState extends State<ScannerView> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    final controller = _controller;
     if (state == AppLifecycleState.inactive) {
-      controller?.dispose();
-      _controller = null;
-    } else if (state == AppLifecycleState.resumed && controller == null) {
+      _kameraFreigeben();
+    } else if (state == AppLifecycleState.resumed && widget.aktiv && _controller == null) {
       _initCamera();
     }
   }

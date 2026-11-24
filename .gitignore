@@ -4,4 +4,6 @@ data/sets.json
 eng.traineddata
 data/cm_products_*.json
 data/cm_prices_*.json
+data/cm_nonsingles_*.json
+data/versions.json
 data/img-cache/
