@@ -1,19 +1,19 @@
 {
-    "version":  "0.12.0",
-    "versionCode":  3200,
-    "released":  "2026-11-14",
+    "version":  "0.13.0",
+    "versionCode":  3300,
+    "released":  "2026-11-24",
     "minSdk":  24,
     "abi":  "arm64-v8a",
     "apk":  {
-                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.12.0/onepiece-scanner-arm64.apk",
-                "bytes":  39596077,
-                "sha256":  "698de20d8f2e655b68261c865ac96d15255f9903b64e277181bc2c57aa39e00f"
+                "url":  "https://github.com/FeyzAras/onepiece-scanner/releases/download/v0.13.0/onepiece-scanner-arm64.apk",
+                "bytes":  39880681,
+                "sha256":  "4936b43fcc883da0fd7928f687ebf8978a0ae973216b51871afbef9702108f3c"
             },
     "notes":  [
-                  "Leader wählen, Karten hinzufügen — der Kartensucher zeigt nur, was zum Leader passt",
-                  "Laufende Prüfung nach den offiziellen Regeln: 50 Karten, höchstens 4 je Nummer (Alt-Arts zählen mit), nur Farben des Leaders, Sonderregeln einzelner Leader",
-                  "Kostenkurve und Abgleich mit deiner Sammlung — fehlende Karten mit einem Tipp auf die Wunschliste",
-                  "Deckliste einfügen oder teilen (1xOP01-001 …), jedes Turnierdeck lässt sich als Vorlage übernehmen"
+                  "Kartendetails zeigen alle Motive einer Nummer als Bilder und alle Cardmarket-Versionen mit Ausgabe und Preis – die eigene einfach antippen",
+                  "Korrigiert: Für OP05–OP16 und EB01–EB03 zeigte die App bisher japanische bzw. asiatische Preise. Jetzt englische – viele Werte ändern sich deshalb",
+                  "Alle 4.958 Motive im Katalog, auch die Nachdrucke aus „The Best“",
+                  "Die Kamera läuft nur noch im Scan-Reiter, Preise im deutschen Format (1.234,56 €)"
               ],
     "mandatory":  false
 }
